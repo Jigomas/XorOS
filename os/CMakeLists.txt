@@ -34,3 +34,4 @@ endif()
 # Kernel
 add_executable(xoros src/kernel_main.c)
 target_include_directories(xoros PUBLIC include)
+target_link_options(xoros PRIVATE -nostartfiles -e kernel_main)
