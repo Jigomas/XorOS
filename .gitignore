@@ -23,6 +23,7 @@ Makefile
 # Executables
 rv32i_cpu
 rv32i_tests
+xoros
 
 # IDE
 .vscode/
