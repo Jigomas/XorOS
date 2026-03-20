@@ -141,6 +141,7 @@ failed: 0
 | RV32I             | Полный набор инструкций: ALU, BRANCH, LOAD/STORE, JAL/JALR    |
 | M-extension       | MUL / MULH / MULHSU / MULHU / DIV / DIVU / REM / REMU         |
 | A-extension       | LR.W / SC.W + AMO(SWAP/ADD/XOR/AND/OR/MIN/MAX/MINU/MAXU)      |
+| CSR               | CSRRW / CSRRS / CSRRC / CSRRWI / CSRRSI / CSRRCI              |
 | ECALL             | Callback-хендлер (`setEcallHandler`); a7=1 putchar, a7=10 halt|
 | Контекст          | `Context` (callee-saved) и `FullContext` (все 32 рег + PC)    |
 | Память            | Плоская, little-endian; LR/SC reservation                     |
@@ -162,7 +163,7 @@ failed: 0
 
 ### Симулятор
 
-- [ ] CSR-инструкции (csrr / csrw / csrrs / ...)
+- [x] CSR-инструкции (csrr / csrw / csrrs / ...)
 - [ ] ELF-загрузчик
 - [ ] Дизассемблер (`DecodedInstr` → строка)
 - [ ] MMIO через callback-map в `MemoryModel`

@@ -1,5 +1,5 @@
 Процессор:
-// TODO: CSR-регистры и механизм прерываний
+// TODO: механизм прерываний
 // TODO: ELF-загрузчик
 // TODO: дизассемблер (DecodedInstr → "ADDI a0, zero, 42")
 // TODO: MMIO через callback-map в MemoryModel
