@@ -175,7 +175,6 @@ failed: 0
 - [ ] `scheduler.h` / `scheduler.c` — планировщик round-robin
 - [ ] `vmem.h` / `vmem.c` — виртуальная память Sv32
 
-
 ## Литература, без которой реализация проекта была бы невозможной
 
 - Harris & Harris — *Digital Design and Computer Architecture: RISC-V Edition*
@@ -184,4 +183,3 @@ failed: 0
 - Cox, Kaashoek, Morris — *xv6: a simple, Unix-like teaching operating system*
 - Arpaci-Dusseau — *Operating Systems: Three Easy Pieces*
 - Corbet, Rubini, Kroah-Hartman — *Linux Device Drivers, 3rd Edition*
-
