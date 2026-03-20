@@ -1,0 +1,22 @@
+Процессор:
+// TODO: CSR-регистры и механизм прерываний
+// TODO: ELF-загрузчик
+// TODO: дизассемблер (DecodedInstr → "ADDI a0, zero, 42")
+// TODO: MMIO через callback-map в MemoryModel
+// TODO: расширения F / D / C (A уже сделано)
+// TODO: исправить AUIPC/LUI для RV64 — zero-extend вместо sign-extend (decoder.hpp:85)
+// TODO: исправить LW для RV64 — zero-extend 32→64 вместо sign-extend (rv_model.hpp:239)
+// TODO: исправить CTAD с default non-type template параметрами — не гарантирован в C++17 (test.cpp:278,280,292,293)
+// TODO: Config::XLEN захардкожен = 32, не привязан к шаблонному XLEN (config.hpp:6)
+// TODO: size_ в MemoryModel дублирует data_.size() (memory_model.hpp:108)
+// TODO: rvalue overload в instr_builder.hpp:118-123 бесполезен
+// TODO: исправить форматирование адресов в ошибках — "0x" + decimal вместо hex
+
+ОС:
+// TODO: trap.h / trap.c — обработка исключений и прерываний
+// TODO: process.h — PCB (Process Control Block)
+// TODO: scheduler.h / scheduler.c — планировщик round-robin
+// TODO: vmem.h / vmem.c — виртуальная память Sv32
+// TODO: изучить выравнивание структур в C (__attribute__((aligned)), #pragma pack)
+// TODO: изучить RISC-V Privileged Specification (CSR, trap, mret)
+// TODO: прочитать Харрис гл. 9 — исключения и прерывания (обязательно перед trap)
