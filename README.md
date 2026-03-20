@@ -175,7 +175,7 @@ failed: 0
 - [ ] `vmem.h` / `vmem.c` — виртуальная память Sv32
 
 
-### Литература, без которой реализация проекта была бы невозможной
+## Литература, без которой реализация проекта была бы невозможной
 
 - Harris & Harris — *Digital Design and Computer Architecture: RISC-V Edition*
 - *The RISC-V Instruction Set Manual, Volume I: Unprivileged Architecture*
