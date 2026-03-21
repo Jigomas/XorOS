@@ -163,7 +163,6 @@ failed: 0
 
 ### Симулятор
 
-- [x] CSR-инструкции (csrr / csrw / csrrs / ...)
 - [ ] ELF-загрузчик
 - [ ] Дизассемблер (`DecodedInstr` → строка)
 - [ ] MMIO через callback-map в `MemoryModel`
