@@ -1,5 +1,4 @@
 Процессор:
-// TODO: механизм прерываний
 // TODO: ELF-загрузчик
 // TODO: дизассемблер (DecodedInstr → "ADDI a0, zero, 42")
 // TODO: MMIO через callback-map в MemoryModel
@@ -13,10 +12,7 @@
 // TODO: исправить форматирование адресов в ошибках — "0x" + decimal вместо hex
 
 ОС:
-// TODO: trap.h / trap.c — обработка исключений и прерываний
 // TODO: process.h — PCB (Process Control Block)
 // TODO: scheduler.h / scheduler.c — планировщик round-robin
 // TODO: vmem.h / vmem.c — виртуальная память Sv32
 // TODO: изучить выравнивание структур в C (__attribute__((aligned)), #pragma pack)
-// TODO: изучить RISC-V Privileged Specification (CSR, trap, mret)
-// TODO: прочитать Харрис гл. 9 — исключения и прерывания (обязательно перед trap)

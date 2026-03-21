@@ -149,13 +149,15 @@ failed: 0
 
 ### ОС (`os/`)
 
-| Компонент     | Описание                                              |
-|---------------|-------------------------------------------------------|
-| `boot.S`      | Инициализация SP=0x2000, вызов `kernel_main`          |
-| `ecall.h`     | `sys_putchar` / `sys_exit` через inline asm           |
-| `csr.h`       | Адреса Machine-level CSR, коды mcause (заготовка)     |
-| `kernel_main` | Вывод "Hello from XorOS!" + sys_exit                  |
-| Тесты         | 5 тестов: putchar, арифметика (+, −, /, %)            |
+| Компонент     | Описание                                                      |
+|---------------|---------------------------------------------------------------|
+| `boot.S`      | Инициализация SP=0x2000, установка mtvec, вызов `kernel_main` |
+| `ecall.h`     | `sys_putchar` / `sys_exit` через inline asm                   |
+| `csr.h`       | Адреса Machine-level CSR, коды mcause                         |
+| `trap.S`      | Точка входа trap-хендлера: сохранение регистров, `mret`       |
+| `trap.c`      | Диспетчеризация исключений по mcause, вывод причины, паника   |
+| `kernel_main` | Вывод "Hello from XorOS!" + sys_exit                          |
+| Тесты         | 5 тестов: putchar, арифметика (+, −, /, %)                    |
 
 ---
 
