@@ -12,7 +12,6 @@
 // TODO: исправить форматирование адресов в ошибках — "0x" + decimal вместо hex
 
 ОС:
-// TODO: process.h — PCB (Process Control Block)
-// TODO: scheduler.h / scheduler.c — планировщик round-robin
 // TODO: vmem.h / vmem.c — виртуальная память Sv32
+// TODO: CoreMark (printf stub + static malloc + instrCount)
 // TODO: изучить выравнивание структур в C (__attribute__((aligned)), #pragma pack)

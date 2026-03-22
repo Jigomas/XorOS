@@ -104,6 +104,11 @@ cmake --build build -j$(nproc)
 
 ```plaintext
 Hello from XorOS!
+task A: hello
+task B: hello
+task A: bye
+task B: bye
+kernel: all done
 ```
 
 ### Запуск тестов OS
@@ -149,15 +154,18 @@ failed: 0
 
 ### ОС (`os/`)
 
-| Компонент     | Описание                                                      |
-|---------------|---------------------------------------------------------------|
-| `boot.S`      | Инициализация SP=0x2000, установка mtvec, вызов `kernel_main` |
-| `ecall.h`     | `sys_putchar` / `sys_exit` через inline asm                   |
-| `csr.h`       | Адреса Machine-level CSR, коды mcause                         |
-| `trap.S`      | Точка входа trap-хендлера: сохранение регистров, `mret`       |
-| `trap.c`      | Диспетчеризация исключений по mcause, вывод причины, паника   |
-| `kernel_main` | Вывод "Hello from XorOS!" + sys_exit                          |
-| Тесты         | 5 тестов: putchar, арифметика (+, −, /, %)                    |
+| Компонент       | Описание                                                           |
+|-----------------|--------------------------------------------------------------------|
+| `boot.S`        | Инициализация SP, GP, установка mtvec, вызов `kernel_main`         |
+| `ecall.h`       | `sys_putchar` / `sys_exit` через inline asm                        |
+| `csr.h`         | Адреса Machine-level CSR, коды mcause                              |
+| `trap.S`        | Точка входа trap-хендлера: сохранение регистров, `mret`            |
+| `trap.c`        | Диспетчеризация исключений по mcause, вывод причины, паника        |
+| `process.h`     | PCB: `proc_state_t`, `context_t` (callee-saved), `proc_t`          |
+| `scheduler.h/c` | Планировщик round-robin: `sched_init/spawn/yield/exit`             |
+| `sched_switch.S`| `context_switch` — сохранение/восстановление ra/sp/s0-s11          |
+| `kernel_main`   | Демо round-robin: два процесса с `sched_yield`                     |
+| Тесты           | 5 тестов: putchar, арифметика (+, −, /, %)                         |
 
 ---
 
@@ -171,10 +179,11 @@ failed: 0
 
 ### ОС
 
-- [ ] `trap.h` / `trap.c` — обработка исключений и прерываний
-- [ ] `process.h` — PCB (Process Control Block)
-- [ ] `scheduler.h` / `scheduler.c` — планировщик round-robin
+- [x] `trap.h` / `trap.c` — обработка исключений и прерываний
+- [x] `process.h` — PCB (Process Control Block)
+- [x] `scheduler.h` / `scheduler.c` — планировщик round-robin
 - [ ] `vmem.h` / `vmem.c` — виртуальная память Sv32
+- [ ] CoreMark — bare-metal бенчмарк производительности
 
 ## Литература, без которой реализация проекта была бы невозможной
 
