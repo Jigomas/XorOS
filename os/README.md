@@ -46,16 +46,18 @@ os/
 │   ├── csr.h         — адреса CSR-регистров и коды исключений
 │   ├── trap.h        — объявление trap_handler
 │   ├── process.h     — PCB: proc_state_t, context_t, proc_t
-│   └── scheduler.h   — API планировщика: sched_init/spawn/yield/exit
+│   ├── scheduler.h   — API планировщика: sched_init/spawn/yield/exit
+│   └── vmem.h        — Sv32 виртуальная память: vmem_map/vmem_enable, флаги PTE
 ├── src/
 │   ├── boot.S          — _start: SP, GP, mtvec, вызов kernel_main
 │   ├── kernel_main.c   — демо round-robin: два процесса с sched_yield
 │   ├── trap.S          — trap_entry: сохранение регистров, вызов trap_handler, mret
 │   ├── trap.c          — диспетчеризация mcause, вывод причины, паника
 │   ├── sched_switch.S  — context_switch: сохранение/восстановление callee-saved
-│   └── scheduler.c     — round-robin планировщик, трамплин для новых процессов
+│   ├── scheduler.c     — round-robin планировщик, трамплин для новых процессов
+│   └── vmem.c          — Sv32 page tables: root_pt/l0_pt, vmem_map, vmem_enable
 ├── tests/
-│   └── test_ecall.c  — 5 тестов: sys_putchar, арифметика (+, -, /, %)
+│   └── test_ecall.c  — 9 тестов: sys_putchar, арифметика (+, -, /, %), Sv32 vmem
 ├── CMakeLists.txt
 └── README.md
 ```
@@ -123,7 +125,13 @@ kernel: all done
 [PASS] arithmetic: 10/3==3
 [PASS] arithmetic: 10%3==1
 
-passed: 5
+--- vmem ---
+[PASS] code runs after vmem_enable
+[PASS] stack read after vmem_enable
+[PASS] write+read via virtual addr
+[PASS] arithmetic after vmem_enable: 6*7=42
+
+passed: 9
 failed: 0
 ```
 
@@ -154,14 +162,11 @@ failed: 0
 | `CSR_MCAUSE`   | 0x342  | Причина trap                      |
 | `CSR_MTVAL`    | 0x343  | Доп. информация (адрес/инструкция)|
 | `CSR_MIP`      | 0x344  | Ожидающие прерывания              |
+| `CSR_SATP`     | 0x180  | Управление трансляцией (Sv32)     |
 | `CSR_MHARTID`  | 0xF14  | ID аппаратного потока (всегда 0)  |
 
 ---
 
 ## Дорожная карта
 
-- [x] `trap.h` / `trap.c` — обработка исключений и прерываний
-- [x] `process.h` — PCB (Process Control Block)
-- [x] `scheduler.h` / `scheduler.c` — планировщик round-robin
-- [ ] `vmem.h` / `vmem.c` — виртуальная память Sv32
 - [ ] CoreMark — bare-metal бенчмарк производительности

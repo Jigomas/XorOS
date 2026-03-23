@@ -19,7 +19,7 @@ add_compile_options(
     -Wall -Wextra -Werror
 )
 
-add_executable(xoros src/boot.S src/kernel_main.c src/trap.S src/trap.c src/sched_switch.S src/scheduler.c)
+add_executable(xoros src/boot.S src/kernel_main.c src/trap.S src/trap.c src/sched_switch.S src/scheduler.c src/vmem.c)
 target_include_directories(xoros PUBLIC include)
 target_link_options(xoros PRIVATE
     ${ARCH_FLAGS}
@@ -35,7 +35,7 @@ add_custom_command(TARGET xoros POST_BUILD
 
 set(SIMULATOR "${CMAKE_CURRENT_SOURCE_DIR}/../rv32i/build/rv32i_cpu" CACHE FILEPATH "Path to rv32i_cpu simulator")
 
-add_executable(xoros_tests src/boot.S tests/test_ecall.c src/trap.S src/trap.c)
+add_executable(xoros_tests src/boot.S tests/test_ecall.c src/trap.S src/trap.c src/vmem.c)
 target_include_directories(xoros_tests PUBLIC include)
 target_link_options(xoros_tests PRIVATE
     ${ARCH_FLAGS}

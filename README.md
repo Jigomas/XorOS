@@ -125,7 +125,13 @@ cmake --build build --target run_tests
 [PASS] arithmetic: 10/3==3
 [PASS] arithmetic: 10%3==1
 
-passed: 5
+--- vmem ---
+[PASS] code runs after vmem_enable
+[PASS] stack read after vmem_enable
+[PASS] write+read via virtual addr
+[PASS] arithmetic after vmem_enable: 6*7=42
+
+passed: 9
 failed: 0
 ```
 
@@ -164,8 +170,11 @@ failed: 0
 | `process.h`     | PCB: `proc_state_t`, `context_t` (callee-saved), `proc_t`          |
 | `scheduler.h/c` | Планировщик round-robin: `sched_init/spawn/yield/exit`             |
 | `sched_switch.S`| `context_switch` — сохранение/восстановление ra/sp/s0-s11          |
+| `vmem.h/c`      | Sv32 виртуальная память: identity map, satp, sfence.vma (NOP)      |
 | `kernel_main`   | Демо round-robin: два процесса с `sched_yield`                     |
-| Тесты           | 5 тестов: putchar, арифметика (+, −, /, %)                         |
+| Тесты           | 9 тестов: putchar, арифметика (+, −, /, %), Sv32 vmem              |
+
+> Список процессов в планировщике планируется расширить до динамического array-of-slots без malloc на основе [Jigomas/List](https://github.com/Jigomas/List).
 
 ---
 
@@ -176,14 +185,12 @@ failed: 0
 - [ ] ELF-загрузчик
 - [ ] Дизассемблер (`DecodedInstr` → строка)
 - [ ] MMIO через callback-map в `MemoryModel`
+- [ ] `CacheModel` — LRU-кэш между `RVModel` и `MemoryModel` (на основе [Jigomas/LFU_cache](https://github.com/Jigomas/LFU_cache), переписать с LRU); hit/miss счётчики, CPI > 1
 
 ### ОС
 
-- [x] `trap.h` / `trap.c` — обработка исключений и прерываний
-- [x] `process.h` — PCB (Process Control Block)
-- [x] `scheduler.h` / `scheduler.c` — планировщик round-robin
-- [ ] `vmem.h` / `vmem.c` — виртуальная память Sv32
 - [ ] CoreMark — bare-metal бенчмарк производительности
+- [ ] Динамический список процессов в планировщике — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
 
 ## Литература, без которой реализация проекта была бы невозможной
 

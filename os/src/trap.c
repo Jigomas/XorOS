@@ -32,9 +32,12 @@ static const char *cause_name(uint32_t mcause) {
         case CAUSE_LOAD_FAULT:     return "load access fault";
         case CAUSE_STORE_MISALIGN: return "store address misaligned";
         case CAUSE_STORE_FAULT:    return "store access fault";
-        case CAUSE_ECALL_U:        return "ecall from U-mode";
-        case CAUSE_ECALL_M:        return "ecall from M-mode";
-        default:                   return "unknown exception";
+        case CAUSE_ECALL_U:          return "ecall from U-mode";
+        case CAUSE_ECALL_M:          return "ecall from M-mode";
+        case CAUSE_INSN_PAGE_FAULT:  return "instruction page fault";
+        case CAUSE_LOAD_PAGE_FAULT:  return "load page fault";
+        case CAUSE_STORE_PAGE_FAULT: return "store page fault";
+        default:                     return "unknown exception";
     }
 }
 

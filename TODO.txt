@@ -12,6 +12,10 @@
 // TODO: исправить форматирование адресов в ошибках — "0x" + decimal вместо hex
 
 ОС:
-// TODO: vmem.h / vmem.c — виртуальная память Sv32
 // TODO: CoreMark (printf stub + static malloc + instrCount)
 // TODO: изучить выравнивание структур в C (__attribute__((aligned)), #pragma pack)
+// TODO: заменить статический массив процессов в планировщике на array-of-slots список (Jigomas/List)
+
+Симулятор (интеграция собственных репозиториев):
+// TODO: CacheModel — LRU-кэш между RVModel и MemoryModel (на основе Jigomas/LFU_cache, переписать с LRU)
+//       даст hit/miss счётчики и CPI > 1; делать после vmem (physically tagged)

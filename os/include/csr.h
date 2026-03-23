@@ -4,6 +4,7 @@
 
 // CSR addresses (rv32i machine-level)
 typedef enum {
+    CSR_SATP     = 0x180,  // supervisor address translation (Sv32)
     CSR_MSTATUS  = 0x300,  // machine status
     CSR_MIE      = 0x304,  // machine interrupt enable
     CSR_MTVEC    = 0x305,  // trap-handler base address
@@ -35,6 +36,9 @@ typedef enum {
     CAUSE_STORE_FAULT    = 7,   // store access fault
     CAUSE_ECALL_U        = 8,   // ecall from U-mode
     CAUSE_ECALL_M        = 11,  // ecall from M-mode
+    CAUSE_INSN_PAGE_FAULT  = 12,  // instruction page fault
+    CAUSE_LOAD_PAGE_FAULT  = 13,  // load page fault
+    CAUSE_STORE_PAGE_FAULT = 15,  // store page fault
 } csr_exc_t;
 
 // interrupt codes (mcause bit 31 = 1)
