@@ -113,6 +113,8 @@ task B: hello
 task A: bye
 task B: bye
 kernel: all done
+
+cache: 11282 hits / 1625 misses | 87.4% hit rate
 ```
 
 Ожидаемый вывод тестов:
@@ -133,6 +135,8 @@ kernel: all done
 
 passed: 9
 failed: 0
+
+cache: 22086 hits / 1160 misses | 95.0% hit rate
 ```
 
 ---

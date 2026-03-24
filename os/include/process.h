@@ -13,7 +13,7 @@ typedef enum {
     PROC_ZOMBIE  = 3,
 } proc_state_t;
 
-// callee-saved regs + ra, saved on context switch 
+// callee-saved regs + ra, saved on context switch
 typedef struct {
     uint32_t ra;
     uint32_t sp;
@@ -31,13 +31,13 @@ typedef struct {
     uint32_t s11;
 } context_t;
 
-// process control block 
+// process control block
 typedef struct {
     proc_state_t state;
     uint32_t     pid;
     context_t    ctx;
-    void        (*entry)(void);     // entry function, called by trampoline
-    uint8_t      stack[STACK_SIZE]; // grows down
+    void (*entry)(void);        // entry function, called by trampoline
+    uint8_t stack[STACK_SIZE];  // grows down
 } proc_t;
 
 #endif

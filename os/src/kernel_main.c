@@ -2,7 +2,7 @@
 #include "scheduler.h"
 #include "vmem.h"
 
-static void print(const char *s) {
+static void print(const char* s) {
     while (*s)
         sys_putchar(*s++);
 }
@@ -30,7 +30,7 @@ void kernel_main(void) {
     sched_init();
     sched_spawn(task_a);
     sched_spawn(task_b);
-    // yield until all spawned processes finish 
+    // yield until all spawned processes finish
     sched_yield();
     sched_yield();
     print("kernel: all done\n");

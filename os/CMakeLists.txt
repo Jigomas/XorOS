@@ -42,9 +42,12 @@ target_link_options(xoros_tests PRIVATE
     -nostdlib -ffreestanding
     -Ttext=0x0 -e _start
 )
-target_link_libraries(xoros_tests
-    /usr/lib/gcc/riscv64-unknown-elf/13.2.0/rv32i/ilp32/libgcc.a
+execute_process(
+    COMMAND ${CMAKE_C_COMPILER} ${ARCH_FLAGS} -print-libgcc-file-name
+    OUTPUT_VARIABLE LIBGCC_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+target_link_libraries(xoros_tests ${LIBGCC_PATH})
 add_custom_command(TARGET xoros_tests POST_BUILD
     COMMAND riscv64-unknown-elf-objcopy -O binary xoros_tests xoros_tests.bin
     COMMENT "Creating xoros_tests.bin"

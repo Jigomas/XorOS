@@ -1,4 +1,5 @@
 #include "scheduler.h"
+
 #include "ecall.h"
 
 proc_t procs[MAX_PROCS];
@@ -26,14 +27,14 @@ int sched_spawn(void (*entry)(void)) {
         if (procs[i].state != PROC_UNUSED)
             continue;
 
-        procs[i].state  = PROC_READY;
-        procs[i].pid    = next_pid++;
-        procs[i].entry  = entry;
+        procs[i].state = PROC_READY;
+        procs[i].pid   = next_pid++;
+        procs[i].entry = entry;
 
-        procs[i].ctx.ra = (uint32_t)proc_trampoline;
-        procs[i].ctx.sp = (uint32_t)(procs[i].stack + STACK_SIZE);
+        procs[i].ctx.ra = (uint32_t) proc_trampoline;
+        procs[i].ctx.sp = (uint32_t) (procs[i].stack + STACK_SIZE);
 
-        return (int)procs[i].pid;
+        return (int) procs[i].pid;
     }
     return -1;
 }
@@ -47,7 +48,7 @@ void sched_yield(void) {
             if (procs[old].state == PROC_RUNNING)
                 procs[old].state = PROC_READY;
             procs[next].state = PROC_RUNNING;
-            current = next;
+            current           = next;
             context_switch(&procs[old].ctx, &procs[next].ctx);
             return;
         }
@@ -60,9 +61,9 @@ void sched_exit(void) {
     for (int i = 1; i <= MAX_PROCS; i++) {
         int next = (current + i) % MAX_PROCS;
         if (procs[next].state == PROC_READY) {
-            int old = current;
+            int old           = current;
             procs[next].state = PROC_RUNNING;
-            current = next;
+            current           = next;
             context_switch(&procs[old].ctx, &procs[next].ctx);
             return;
         }

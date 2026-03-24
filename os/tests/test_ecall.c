@@ -58,12 +58,12 @@ void kernel_main(void) {
 
     // stack variable accessible via VA = PA (identity mapped)
     volatile uint32_t local = 0xCAFEu;
-    check("stack read after vmem_enable", (uint32_t)local == 0xCAFEu);
+    check("stack read after vmem_enable", (uint32_t) local == 0xCAFEu);
 
     // write and read back through a virtual address in the upper half
-    volatile uint32_t *ptr = (volatile uint32_t *)0xE000u;
-    *ptr = 0xBEEFu;
-    check("write+read via virtual addr", (uint32_t)*ptr == 0xBEEFu);
+    volatile uint32_t* ptr = (volatile uint32_t*) 0xE000u;
+    *ptr                   = 0xBEEFu;
+    check("write+read via virtual addr", (uint32_t) *ptr == 0xBEEFu);
 
     check("arithmetic after vmem_enable: 6*7=42", 6 * 7 == 42);
 

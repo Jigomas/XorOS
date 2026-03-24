@@ -13,6 +13,8 @@
 операций (A). Работает в режиме single-cycle: один вызов `step()` — один цикл fetch → decode → execute.
 Архитектура Von Neumann — единое адресное пространство для кода и данных. Для взаимодействия
 с хостом симулятор перехватывает инструкцию `ecall` через C++ callback (`setEcallHandler`).
+Между процессором и памятью можно вставить `CacheModel` — LRU-кэш, который собирает
+статистику попаданий и промахов в реальном времени.
 
 **Ядро ОС** (`os/`) — bare-metal программа на C11 и ассемблере, компилируется без libc.
 Загрузчик (`boot.S`) инициализирует стек (`SP = 0x2000`) и вызывает `kernel_main`.
@@ -49,6 +51,14 @@
 **ECALL вместо MMIO.** Вместо эмуляции UART по фиксированному адресу симулятор
 перехватывает `ecall` через C++ callback. ОС не привязана к адресу конкретного устройства
 и легко переносима между конфигурациями симулятора.
+
+**CacheModel как сменный слой памяти.** `RVModel` принимает тип памяти как шаблонный параметр
+(`RVModel<XLEN, MemT>`), что позволяет подставить `CacheModel<32>` вместо `MemoryModel<32>`
+без изменения ядра симулятора. `CacheModel` реализует LRU-кэш с политикой write-through
+и read-allocate: промах при чтении загружает слово в кэш, запись всегда проходит насквозь
+в `MemoryModel`. Размер кэша — 64 слова (256 байт). После исполнения симулятор печатает
+статистику: количество попаданий, промахов и hit rate. При прогоне ядра XorOS получается
+около 87% попаданий.
 
 ---
 
@@ -109,6 +119,8 @@ task B: hello
 task A: bye
 task B: bye
 kernel: all done
+
+cache: 11282 hits / 1625 misses | 87.4% hit rate
 ```
 
 ### Запуск тестов OS
@@ -156,6 +168,7 @@ failed: 0
 | ECALL             | Callback-хендлер (`setEcallHandler`); a7=1 putchar, a7=10 halt|
 | Контекст          | `Context` (callee-saved) и `FullContext` (все 32 рег + PC)    |
 | Память            | Плоская, little-endian; LR/SC reservation                     |
+| CacheModel        | LRU-кэш (64 слова) поверх MemoryModel; write-through; hit/miss|
 | Отладка           | Трассировка инструкций (`setDebug`), hex-дамп памяти          |
 
 ### ОС (`os/`)
@@ -185,7 +198,6 @@ failed: 0
 - [ ] ELF-загрузчик
 - [ ] Дизассемблер (`DecodedInstr` → строка)
 - [ ] MMIO через callback-map в `MemoryModel`
-- [ ] `CacheModel` — LRU-кэш между `RVModel` и `MemoryModel` (на основе [Jigomas/LFU_cache](https://github.com/Jigomas/LFU_cache), переписать с LRU); hit/miss счётчики, CPI > 1
 
 ### ОС
 

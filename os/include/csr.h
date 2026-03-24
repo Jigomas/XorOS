@@ -26,16 +26,16 @@ typedef enum {
 
 // exception codes
 typedef enum {
-    CAUSE_INSN_MISALIGN  = 0,   // instruction address misaligned
-    CAUSE_INSN_FAULT     = 1,   // instruction access fault
-    CAUSE_ILLEGAL_INSN   = 2,   // illegal instruction
-    CAUSE_BREAKPOINT     = 3,   // breakpoint
-    CAUSE_LOAD_MISALIGN  = 4,   // load address misaligned
-    CAUSE_LOAD_FAULT     = 5,   // load access fault
-    CAUSE_STORE_MISALIGN = 6,   // store address misaligned
-    CAUSE_STORE_FAULT    = 7,   // store access fault
-    CAUSE_ECALL_U        = 8,   // ecall from U-mode
-    CAUSE_ECALL_M        = 11,  // ecall from M-mode
+    CAUSE_INSN_MISALIGN    = 0,   // instruction address misaligned
+    CAUSE_INSN_FAULT       = 1,   // instruction access fault
+    CAUSE_ILLEGAL_INSN     = 2,   // illegal instruction
+    CAUSE_BREAKPOINT       = 3,   // breakpoint
+    CAUSE_LOAD_MISALIGN    = 4,   // load address misaligned
+    CAUSE_LOAD_FAULT       = 5,   // load access fault
+    CAUSE_STORE_MISALIGN   = 6,   // store address misaligned
+    CAUSE_STORE_FAULT      = 7,   // store access fault
+    CAUSE_ECALL_U          = 8,   // ecall from U-mode
+    CAUSE_ECALL_M          = 11,  // ecall from M-mode
     CAUSE_INSN_PAGE_FAULT  = 12,  // instruction page fault
     CAUSE_LOAD_PAGE_FAULT  = 13,  // load page fault
     CAUSE_STORE_PAGE_FAULT = 15,  // store page fault
