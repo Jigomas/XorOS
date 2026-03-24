@@ -26,7 +26,9 @@
 **Flat binary вместо ELF.** ОС компонуется с флагами `-Ttext=0x0 -e _start` в сырой
 бинарник без заголовков. Симулятор копирует его в начало памяти напрямую — никакого
 ELF-загрузчика. Стек ядра в `0x2000`, растёт вниз в пределах 64 KiB.
-Стеки процессов встроены в PCB (по 512 байт каждый).
+Стеки процессов встроены в PCB (по 512 байт каждый). Нижнее слово каждого стека
+содержит канарейку `0xDEADBEEF` — перед каждым переключением контекста планировщик
+проверяет её целостность и выводит `panic: stack overflow in pid N` при порче.
 
 **ECALL вместо MMIO.** Вместо эмуляции UART по фиксированному адресу симулятор
 перехватывает `ecall` через C++ callback. ОС не привязана к адресу конкретного
@@ -47,17 +49,18 @@ os/
 │   ├── trap.h        — объявление trap_handler
 │   ├── process.h     — PCB: proc_state_t, context_t, proc_t
 │   ├── scheduler.h   — API планировщика: sched_init/spawn/yield/exit
-│   └── vmem.h        — Sv32 виртуальная память: vmem_map/vmem_enable, флаги PTE
+│   ├── vmem.h        — Sv32 виртуальная память: vmem_map/vmem_enable, флаги PTE
+│   └── process.h     — PCB: proc_state_t, context_t, proc_stack_t (с канарейкой)
 ├── src/
 │   ├── boot.S          — _start: SP, GP, mtvec, вызов kernel_main
 │   ├── kernel_main.c   — демо round-robin: два процесса с sched_yield
 │   ├── trap.S          — trap_entry: сохранение регистров, вызов trap_handler, mret
 │   ├── trap.c          — диспетчеризация mcause, вывод причины, паника
 │   ├── sched_switch.S  — context_switch: сохранение/восстановление callee-saved
-│   ├── scheduler.c     — round-robin планировщик, трамплин для новых процессов
+│   ├── scheduler.c     — round-robin планировщик, трамплин, проверка канарейки
 │   └── vmem.c          — Sv32 page tables: root_pt/l0_pt, vmem_map, vmem_enable
 ├── tests/
-│   └── test_ecall.c  — 9 тестов: sys_putchar, арифметика (+, -, /, %), Sv32 vmem
+│   └── test_ecall.c  — 12 тестов: sys_putchar, арифметика, Sv32 vmem, stack canary
 ├── CMakeLists.txt
 └── README.md
 ```
@@ -133,7 +136,12 @@ cache: 11282 hits / 1625 misses | 87.4% hit rate
 [PASS] write+read via virtual addr
 [PASS] arithmetic after vmem_enable: 6*7=42
 
-passed: 9
+--- canary ---
+[PASS] STACK_CANARY == 0xDEADBEEF
+[PASS] canary set on spawn
+[PASS] canary intact after normal exit
+
+passed: 12
 failed: 0
 
 cache: 22086 hits / 1160 misses | 95.0% hit rate

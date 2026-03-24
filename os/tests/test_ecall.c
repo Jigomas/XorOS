@@ -1,4 +1,6 @@
 #include "ecall.h"
+#include "process.h"
+#include "scheduler.h"
 #include "vmem.h"
 
 static int passed = 0;
@@ -34,6 +36,8 @@ static void check(const char* name, int ok) {
         failed++;
 }
 
+static void noop(void) {}
+
 void kernel_main(void) {
     print("=== XorOS ecall tests ===\n");
 
@@ -66,6 +70,27 @@ void kernel_main(void) {
     check("write+read via virtual addr", (uint32_t) *ptr == 0xBEEFu);
 
     check("arithmetic after vmem_enable: 6*7=42", 6 * 7 == 42);
+
+    print("\n--- canary ---\n");
+
+    check("STACK_CANARY == 0xDEADBEEF", STACK_CANARY == 0xDEADBEEFu);
+
+    sched_init();
+    int pid = sched_spawn(noop);
+
+    int slot = -1;
+    for (int i = 0; i < MAX_PROCS; i++) {
+        if ((int) procs[i].pid == pid) {
+            slot = i;
+            break;
+        }
+    }
+
+    check("canary set on spawn", procs[slot].stack.canary == STACK_CANARY);
+
+    sched_yield();
+
+    check("canary intact after normal exit", procs[slot].stack.canary == STACK_CANARY);
 
     print("\npassed: ");
     print_int(passed);

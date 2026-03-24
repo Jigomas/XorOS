@@ -2,9 +2,24 @@
 
 #include "ecall.h"
 
+static void print_str(const char* s) {
+    for (; *s; ++s)
+        sys_putchar(*s);
+}
+
+static void print_uint(uint32_t n) {
+    if (n >= 10)
+        print_uint(n / 10);
+    sys_putchar('0' + (char)(n % 10));
+}
+
 static void check_canary(int idx) {
-    if (procs[idx].stack.canary != STACK_CANARY)
-        sys_exit(); // stack overflow detected - halt
+    if (procs[idx].stack.canary != STACK_CANARY) {
+        print_str("panic: stack overflow in pid ");
+        print_uint(procs[idx].pid);
+        sys_putchar('\n');
+        sys_exit();
+    }
 }
 
 proc_t procs[MAX_PROCS];
@@ -23,8 +38,9 @@ void sched_init(void) {
     for (int i = 0; i < MAX_PROCS; i++)
         procs[i].state = PROC_UNUSED;
 
-    procs[0].state = PROC_RUNNING;
-    procs[0].pid   = 0;
+    procs[0].state        = PROC_RUNNING;
+    procs[0].pid          = 0;
+    procs[0].stack.canary = STACK_CANARY;
 }
 
 int sched_spawn(void (*entry)(void)) {

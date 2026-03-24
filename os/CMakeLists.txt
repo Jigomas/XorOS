@@ -35,7 +35,7 @@ add_custom_command(TARGET xoros POST_BUILD
 
 set(SIMULATOR "${CMAKE_CURRENT_SOURCE_DIR}/../rv32i/build/rv32i_cpu" CACHE FILEPATH "Path to rv32i_cpu simulator")
 
-add_executable(xoros_tests src/boot.S tests/test_ecall.c src/trap.S src/trap.c src/vmem.c)
+add_executable(xoros_tests src/boot.S tests/test_ecall.c src/trap.S src/trap.c src/sched_switch.S src/scheduler.c src/vmem.c)
 target_include_directories(xoros_tests PUBLIC include)
 target_link_options(xoros_tests PRIVATE
     ${ARCH_FLAGS}
