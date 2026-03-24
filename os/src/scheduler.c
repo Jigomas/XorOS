@@ -2,13 +2,18 @@
 
 #include "ecall.h"
 
+static void check_canary(int idx) {
+    if (procs[idx].stack.canary != STACK_CANARY)
+        sys_exit(); // stack overflow detected - halt
+}
+
 proc_t procs[MAX_PROCS];
 
 static uint32_t next_pid = 1;
 static int      current  = 0;
 
-/* trampoline: first function a new process runs after context switch.
- * calls entry(), then exits - avoids ra confusion in context_switch */
+// trampoline: first function a new process runs after context switch.
+// calls entry(), then exits - avoids ra confusion in context_switch 
 static void proc_trampoline(void) {
     procs[current].entry();
     sched_exit();
@@ -31,8 +36,9 @@ int sched_spawn(void (*entry)(void)) {
         procs[i].pid   = next_pid++;
         procs[i].entry = entry;
 
-        procs[i].ctx.ra = (uint32_t) proc_trampoline;
-        procs[i].ctx.sp = (uint32_t) (procs[i].stack + STACK_SIZE);
+        procs[i].stack.canary = STACK_CANARY;
+        procs[i].ctx.ra       = (uint32_t) proc_trampoline;
+        procs[i].ctx.sp       = (uint32_t) (procs[i].stack.data + sizeof(procs[i].stack.data));
 
         return (int) procs[i].pid;
     }
@@ -41,6 +47,7 @@ int sched_spawn(void (*entry)(void)) {
 
 void sched_yield(void) {
     int old = current;
+    check_canary(old);
 
     for (int i = 1; i <= MAX_PROCS; i++) {
         int next = (old + i) % MAX_PROCS;
@@ -56,6 +63,7 @@ void sched_yield(void) {
 }
 
 void sched_exit(void) {
+    check_canary(current);
     procs[current].state = PROC_ZOMBIE;
 
     for (int i = 1; i <= MAX_PROCS; i++) {

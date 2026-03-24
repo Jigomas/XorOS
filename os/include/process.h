@@ -3,8 +3,9 @@
 
 #include <stdint.h>
 
-#define MAX_PROCS  4    // max concurrent processes
-#define STACK_SIZE 512  // stack per process, bytes
+#define MAX_PROCS    4           // max concurrent processes
+#define STACK_SIZE   512         // stack per process, bytes
+#define STACK_CANARY 0xDEADBEEFu // written at bottom; overflow overwrites it
 
 typedef enum {
     PROC_UNUSED  = 0,
@@ -31,13 +32,19 @@ typedef struct {
     uint32_t s11;
 } context_t;
 
+// stack with canary at the bottom; stack grows down from top
+typedef struct {
+    uint32_t canary;                              // must equal STACK_CANARY
+    uint8_t  data[STACK_SIZE - sizeof(uint32_t)]; // usable stack space
+} proc_stack_t;
+
 // process control block
 typedef struct {
     proc_state_t state;
     uint32_t     pid;
     context_t    ctx;
-    void (*entry)(void);        // entry function, called by trampoline
-    uint8_t stack[STACK_SIZE];  // grows down
+    void (*entry)(void);  // entry function, called by trampoline
+    proc_stack_t stack;   // grows down; canary at lowest address
 } proc_t;
 
 #endif
