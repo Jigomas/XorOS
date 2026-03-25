@@ -3,6 +3,11 @@
 #include "csr.h"
 #include "ecall.h"
 
+#define MAX_CAUSES 16
+
+static trap_fn_t exc_table[MAX_CAUSES];  // exception handlers (mcause[31]=0)
+static trap_fn_t int_table[MAX_CAUSES];  // interrupt handlers (mcause[31]=1)
+
 static void puts_trap(const char* s) {
     while (*s)
         sys_putchar(*s++);
@@ -61,7 +66,7 @@ static const char* cause_name(uint32_t mcause) {
     }
 }
 
-void trap_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval) {
+static void panic_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval) {
     puts_trap("[trap] ");
     puts_trap(cause_name(mcause));
     puts_trap(" at ");
@@ -73,4 +78,25 @@ void trap_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval) {
     }
     puts_trap("\n");
     sys_exit();
+}
+
+void trap_register_exc(uint32_t cause, trap_fn_t fn) {
+    if (cause < MAX_CAUSES)
+        exc_table[cause] = fn;
+}
+
+void trap_register_int(uint32_t cause, trap_fn_t fn) {
+    if (cause < MAX_CAUSES)
+        int_table[cause] = fn;
+}
+
+void trap_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval) {
+    uint32_t  is_int = mcause & MCAUSE_INT;
+    uint32_t  code   = mcause & ~MCAUSE_INT;
+    trap_fn_t fn     = (code < MAX_CAUSES) ? (is_int ? int_table[code] : exc_table[code]) : 0;
+
+    if (fn)
+        fn(mcause, mepc, mtval);
+    else
+        panic_handler(mcause, mepc, mtval);
 }

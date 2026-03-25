@@ -47,10 +47,9 @@ os/
 │   ├── ecall.h       — системные вызовы (sys_putchar, sys_exit)
 │   ├── csr.h         — адреса CSR-регистров и коды исключений
 │   ├── trap.h        — объявление trap_handler
-│   ├── process.h     — PCB: proc_state_t, context_t, proc_t
+│   ├── process.h     — PCB: proc_state_t, context_t, proc_stack_t (с канарейкой)
 │   ├── scheduler.h   — API планировщика: sched_init/spawn/yield/exit
-│   ├── vmem.h        — Sv32 виртуальная память: vmem_map/vmem_enable, флаги PTE
-│   └── process.h     — PCB: proc_state_t, context_t, proc_stack_t (с канарейкой)
+│   └── vmem.h        — Sv32 виртуальная память: vmem_map/vmem_enable, флаги PTE
 ├── src/
 │   ├── boot.S          — _start: SP, GP, mtvec, вызов kernel_main
 │   ├── kernel_main.c   — демо round-robin: два процесса с sched_yield
@@ -101,7 +100,7 @@ cmake --build build -j$(nproc)
 
 ```bash
 # Запустить ядро
-./rv32i/build/rv32i_cpu os/build/xoros.bin
+./build/rv32i_cpu os/build/xoros.bin
 
 # Запустить тесты OS через CMake
 cmake --build build --target run_tests
@@ -162,7 +161,7 @@ cache: 22086 hits / 1160 misses | 95.0% hit rate
 
 ## CSR-регистры (`csr.h`)
 
-Заголовок содержит адреса Machine-level CSR и коды mcause — заготовка для реализации trap-механизма.
+Заголовок содержит адреса Machine-level CSR и коды mcause, используемые в `trap.c`.
 
 | Макрос         | Адрес  | Назначение                        |
 |----------------|--------|-----------------------------------|

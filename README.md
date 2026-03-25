@@ -6,7 +6,13 @@
 
 ## О проекте
 
-Проект состоит из двух независимых частей, связанных через бинарный интерфейс.
+Проект объединяет три репозитория через git subtree с общей целью — запустить ОС на самописном процессоре:
+
+- [os/](os/) — bare-metal ядро XorOS (этот репозиторий)
+- [rv32i/](rv32i/) — симулятор RISC-V RV32I ([Jigomas/rv32i](https://github.com/Jigomas/rv32i))
+- [rv32i/cache_src/](rv32i/cache_src/) — реализация кэша ([Jigomas/LFU_cache](https://github.com/Jigomas/LFU_cache))
+
+Симулятор и ядро связаны через бинарный интерфейс.
 
 **Симулятор** (`rv32i/`) — программная модель процессора RISC-V, написанная на C++17.
 Реализует базовую архитектуру RV32I с расширениями целочисленного умножения (M) и атомарных
@@ -102,14 +108,14 @@ cmake --build build -j$(nproc)
 
 Собирается:
 
-- `rv32i/build/rv32i_cpu`    — симулятор
+- `build/rv32i_cpu`          — симулятор
 - `os/build/xoros.bin`       — ядро OS в виде flat binary
 - `os/build/xoros_tests.bin` — тесты OS
 
 ### Запуск ядра
 
 ```bash
-./rv32i/build/rv32i_cpu os/build/xoros.bin
+./build/rv32i_cpu os/build/xoros.bin
 ```
 
 ```plaintext
@@ -143,7 +149,7 @@ cmake --build build --target run_tests
 [PASS] write+read via virtual addr
 [PASS] arithmetic after vmem_enable: 6*7=42
 
-passed: 9
+passed: 12
 failed: 0
 ```
 
@@ -185,7 +191,7 @@ failed: 0
 | `sched_switch.S`| `context_switch` — сохранение/восстановление ra/sp/s0-s11          |
 | `vmem.h/c`      | Sv32 виртуальная память: identity map, satp, sfence.vma (NOP)      |
 | `kernel_main`   | Демо round-robin: два процесса с `sched_yield`                     |
-| Тесты           | 9 тестов: putchar, арифметика (+, −, /, %), Sv32 vmem              |
+| Тесты           | 12 тестов: putchar, арифметика, Sv32 vmem, stack canary            |
 
 > Список процессов в планировщике планируется расширить до динамического array-of-slots без malloc на основе [Jigomas/List](https://github.com/Jigomas/List).
 
