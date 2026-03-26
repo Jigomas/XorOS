@@ -175,6 +175,7 @@ failed: 0
 | Контекст          | `Context` (callee-saved) и `FullContext` (все 32 рег + PC)    |
 | Память            | Плоская, little-endian; LR/SC reservation                     |
 | CacheModel        | LRU-кэш (64 слова) поверх MemoryModel; write-through; hit/miss|
+| Дизассемблер      | `Disasm::disassemble()` — `DecodedInstr` → строка ("addi a0, zero, 42") |
 | Отладка           | Трассировка инструкций (`setDebug`), hex-дамп памяти          |
 
 ### ОС (`os/`)
@@ -202,7 +203,6 @@ failed: 0
 ### Симулятор
 
 - [ ] ELF-загрузчик
-- [ ] Дизассемблер (`DecodedInstr` → строка)
 - [ ] MMIO через callback-map в `MemoryModel`
 
 ### ОС

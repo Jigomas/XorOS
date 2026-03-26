@@ -47,6 +47,7 @@ execute_process(
     OUTPUT_VARIABLE LIBGCC_PATH
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+target_link_libraries(xoros ${LIBGCC_PATH})
 target_link_libraries(xoros_tests ${LIBGCC_PATH})
 add_custom_command(TARGET xoros_tests POST_BUILD
     COMMAND riscv64-unknown-elf-objcopy -O binary xoros_tests xoros_tests.bin

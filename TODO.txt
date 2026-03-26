@@ -1,12 +1,7 @@
 Процессор:
 // TODO: ELF-загрузчик
-// TODO: дизассемблер (DecodedInstr → "ADDI a0, zero, 42")
 // TODO: MMIO через callback-map в MemoryModel
 // TODO: расширения F / D / C (A уже сделано)
-// TODO: исправить AUIPC/LUI для RV64 — zero-extend вместо sign-extend (decoder.hpp:85)
-// TODO: исправить LW для RV64 — zero-extend 32→64 вместо sign-extend (rv_model.hpp:239)
-// TODO: исправить CTAD с default non-type template параметрами — не гарантирован в C++17 (test.cpp:278,280,292,293)
-// TODO: rvalue overload в instr_builder.hpp:118-123 бесполезен
 
 ОС:
 // TODO: CoreMark (printf stub + static malloc + instrCount)
