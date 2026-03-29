@@ -108,14 +108,14 @@ cmake --build build -j$(nproc)
 
 Собирается:
 
-- `build/rv32i_cpu`          — симулятор
+- `build/rv32i/rv32i_cpu`    — симулятор
 - `os/build/xoros.bin`       — ядро OS в виде flat binary
 - `os/build/xoros_tests.bin` — тесты OS
 
 ### Запуск ядра
 
 ```bash
-./build/rv32i_cpu os/build/xoros.bin
+./build/rv32i/rv32i_cpu os/build/xoros.bin
 ```
 
 ```plaintext
@@ -132,7 +132,7 @@ cache: 11282 hits / 1625 misses | 87.4% hit rate
 ### Запуск тестов OS
 
 ```bash
-cmake --build build --target run_tests
+cmake --build os/build --target run_tests
 ```
 
 ```plaintext
@@ -156,7 +156,7 @@ failed: 0
 ### Запуск тестов симулятора
 
 ```bash
-./rv32i/build/rv32i_tests
+./build/rv32i/rv32i_tests
 ```
 
 ---
@@ -173,9 +173,9 @@ failed: 0
 | CSR               | CSRRW / CSRRS / CSRRC / CSRRWI / CSRRSI / CSRRCI              |
 | ECALL             | Callback-хендлер (`setEcallHandler`); a7=1 putchar, a7=10 halt|
 | Контекст          | `Context` (callee-saved) и `FullContext` (все 32 рег + PC)    |
-| Память            | Плоская, little-endian; LR/SC reservation                     |
+| Память            | Плоская, little-endian; LR/SC reservation; MMIO regions       |
 | CacheModel        | LRU-кэш (64 слова) поверх MemoryModel; write-through; hit/miss|
-| Дизассемблер      | `Disasm::disassemble()` — `DecodedInstr` → строка ("addi a0, zero, 42") |
+| Дизассемблер      | `Disasm::disassemble()` — DecodedInstr в строку мнемоники     |
 | Отладка           | Трассировка инструкций (`setDebug`), hex-дамп памяти          |
 
 ### ОС (`os/`)
@@ -191,8 +191,10 @@ failed: 0
 | `scheduler.h/c` | Планировщик round-robin: `sched_init/spawn/yield/exit`             |
 | `sched_switch.S`| `context_switch` — сохранение/восстановление ra/sp/s0-s11          |
 | `vmem.h/c`      | Sv32 виртуальная память: identity map, satp, sfence.vma (NOP)      |
-| `kernel_main`   | Демо round-robin: два процесса с `sched_yield`                     |
-| Тесты           | 12 тестов: putchar, арифметика, Sv32 vmem, stack canary            |
+| `pipe.h/c`      | Кольцевой буфер (16 байт); non-blocking pipe_write/read            |
+| `uart.h/c`      | MMIO UART: uart_putchar/puts → запись в 0xF000                     |
+| `kernel_main`   | Демо pipe + UART: task_a пишет в pipe, task_b читает через UART    |
+| Тесты           | 20 тестов: putchar, арифметика, Sv32 vmem, stack canary, pipe      |
 
 > Список процессов в планировщике планируется расширить до динамического array-of-slots без malloc на основе [Jigomas/List](https://github.com/Jigomas/List).
 
@@ -203,12 +205,17 @@ failed: 0
 ### Симулятор
 
 - [ ] ELF-загрузчик
-- [ ] MMIO через callback-map в `MemoryModel`
 
 ### ОС
 
+- [ ] mret — переход из M-mode в S-mode перед вызовом kernel_main
+- [ ] kalloc — простой распределитель физических страниц (bump allocator)
+- [ ] U-mode + CAUSE_ECALL_U handler — системные вызовы без паники
+- [ ] spinlock / критические секции
+- [ ] таймерное прерывание — вытесняющий планировщик
+- [ ] Динамический список процессов — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
+- [ ] pipe — однонаправленный буфер между процессами
 - [ ] CoreMark — bare-metal бенчмарк производительности
-- [ ] Динамический список процессов в планировщике — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
 
 ## Литература, без которой реализация проекта была бы невозможной
 

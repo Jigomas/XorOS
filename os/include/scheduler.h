@@ -21,4 +21,4 @@ void sched_exit(void);
 // context switch: save current ctx, restore next ctx (sched_switch.S)
 void context_switch(context_t* old, context_t* new);
 
-#endif
+#endif /* SCHEDULER_H */

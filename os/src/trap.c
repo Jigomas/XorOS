@@ -80,6 +80,7 @@ static void panic_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval) {
     sys_exit();
 }
 
+// provide your own trap handlers
 void trap_register_exc(uint32_t cause, trap_fn_t fn) {
     if (cause < MAX_CAUSES)
         exc_table[cause] = fn;

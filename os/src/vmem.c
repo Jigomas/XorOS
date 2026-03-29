@@ -2,6 +2,7 @@
 
 // Sv32 page tables
 // all 64KiB addresses have vpn[1]=0, so one L0 table suffices
+// twodimentional arrays to save space
 static uint32_t root_pt[1024] __attribute__((aligned(4096)));
 static uint32_t l0_pt[1024] __attribute__((aligned(4096)));
 

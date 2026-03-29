@@ -13,4 +13,4 @@ void trap_register_int(uint32_t cause, trap_fn_t fn);
 // called from trap.S — dispatches via table, falls back to panic
 void trap_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval);
 
-#endif
+#endif /* TRAP_H */

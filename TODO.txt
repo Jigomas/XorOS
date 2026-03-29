@@ -1,10 +1,13 @@
 Процессор:
 // TODO: ELF-загрузчик
-// TODO: MMIO через callback-map в MemoryModel
 // TODO: расширения F / D / C (A уже сделано)
 
 ОС:
+// TODO: mret — переход из M-mode в S-mode перед вызовом kernel_main (как в xv6 start.c)
+// TODO: kalloc — простой распределитель физических страниц (bump allocator)
+// TODO: U-mode + CAUSE_ECALL_U handler → системные вызовы без паники
+// TODO: spinlock / критические секции
+// TODO: таймерное прерывание → вытесняющий планировщик
+// TODO: заменить статический массив процессов в планировщике на array-of-slots список (Jigomas/List)
 // TODO: CoreMark (printf stub + static malloc + instrCount)
 // TODO: изучить выравнивание структур в C (__attribute__((aligned)), #pragma pack)
-// TODO: заменить статический массив процессов в планировщике на array-of-slots список (Jigomas/List)
-// TODO: U-mode + CAUSE_ECALL_U handler → системные вызовы без паники

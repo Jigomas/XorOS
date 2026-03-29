@@ -10,7 +10,7 @@ static void print_str(const char* s) {
 static void print_uint(uint32_t n) {
     if (n >= 10)
         print_uint(n / 10);
-    sys_putchar('0' + (char)(n % 10));
+    sys_putchar('0' + (char) (n % 10));
 }
 
 static void check_canary(int idx) {
@@ -28,7 +28,7 @@ static uint32_t next_pid = 1;
 static int      current  = 0;
 
 // trampoline: first function a new process runs after context switch.
-// calls entry(), then exits - avoids ra confusion in context_switch 
+// calls entry(), then exits - avoids ra confusion in context_switch
 static void proc_trampoline(void) {
     procs[current].entry();
     sched_exit();
@@ -60,7 +60,7 @@ int sched_spawn(void (*entry)(void)) {
     }
     return -1;
 }
-
+// round - robin planner in search of next ready process
 void sched_yield(void) {
     int old = current;
     check_canary(old);

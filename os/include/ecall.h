@@ -15,4 +15,4 @@ static inline void sys_exit(void) {
     __asm__ volatile("ecall" ::"r"(a7));
 }
 
-#endif
+#endif /* XOROS_ECALL_H */

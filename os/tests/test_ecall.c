@@ -1,4 +1,5 @@
 #include "ecall.h"
+#include "pipe.h"
 #include "process.h"
 #include "scheduler.h"
 #include "vmem.h"
@@ -91,6 +92,29 @@ void kernel_main(void) {
     sched_yield();
 
     check("canary intact after normal exit", procs[slot].stack.canary == STACK_CANARY);
+
+    print("\n--- pipe ---\n");
+
+    pipe_t p;
+    pipe_init(&p);
+    check("pipe_init: count == 0", p.count == 0);
+
+    check("pipe_write returns 0", pipe_write(&p, 'X') == 0);
+
+    uint8_t c = 0;
+    check("pipe_read returns 0", pipe_read(&p, &c) == 0);
+    check("pipe_read correct byte", c == 'X');
+
+    check("pipe_read empty returns -1", pipe_read(&p, &c) == -1);
+
+    for (int i = 0; i < PIPE_SIZE; i++)
+        pipe_write(&p, (uint8_t) i);
+    check("pipe_write full returns -1", pipe_write(&p, 0) == -1);
+
+    for (int i = 0; i < PIPE_SIZE; i++)
+        pipe_read(&p, &c);
+    check("pipe wrap-around write ok", pipe_write(&p, 'W') == 0);
+    check("pipe wrap-around read ok", pipe_read(&p, &c) == 0 && c == 'W');
 
     print("\npassed: ");
     print_int(passed);

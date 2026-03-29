@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CSR_H
+#define CSR_H
 
 #include <stdint.h>
 
@@ -45,3 +46,5 @@ typedef enum {
 #define CAUSE_INT_SW_M    (MCAUSE_INT | 3u)   // machine software interrupt
 #define CAUSE_INT_TIMER_M (MCAUSE_INT | 7u)   // machine timer interrupt
 #define CAUSE_INT_EXT_M   (MCAUSE_INT | 11u)  // machine external interrupt
+
+#endif /* CSR_H */

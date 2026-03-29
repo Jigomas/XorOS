@@ -1,4 +1,5 @@
 .section .text
+.align 2
 .global context_switch
 
 # void context_switch(context_t *old, context_t *new)

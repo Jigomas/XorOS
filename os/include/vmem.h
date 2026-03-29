@@ -16,4 +16,4 @@ void vmem_map(uint32_t virt, uint32_t phys, uint32_t flags);
 // enable Sv32 translation (write satp, sfence.vma)
 void vmem_enable(void);
 
-#endif
+#endif /* VMEM_H */

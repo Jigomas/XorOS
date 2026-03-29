@@ -49,17 +49,21 @@ os/
 │   ├── trap.h        — объявление trap_handler
 │   ├── process.h     — PCB: proc_state_t, context_t, proc_stack_t (с канарейкой)
 │   ├── scheduler.h   — API планировщика: sched_init/spawn/yield/exit
+│   ├── pipe.h        — pipe_t: кольцевой буфер; pipe_init/write/read
+│   ├── uart.h        — MMIO UART: uart_putchar/puts → 0xF000
 │   └── vmem.h        — Sv32 виртуальная память: vmem_map/vmem_enable, флаги PTE
 ├── src/
 │   ├── boot.S          — _start: SP, GP, mtvec, вызов kernel_main
-│   ├── kernel_main.c   — демо round-robin: два процесса с sched_yield
+│   ├── kernel_main.c   — демо: task_a пишет в pipe, task_b читает и печатает
 │   ├── trap.S          — trap_entry: сохранение регистров, вызов trap_handler, mret
 │   ├── trap.c          — диспетчеризация mcause, вывод причины, паника
 │   ├── sched_switch.S  — context_switch: сохранение/восстановление callee-saved
 │   ├── scheduler.c     — round-robin планировщик, трамплин, проверка канарейки
+│   ├── pipe.c          — реализация кольцевого буфера (non-blocking)
+│   ├── uart.c          — uart_putchar/puts через MMIO (0xF000)
 │   └── vmem.c          — Sv32 page tables: root_pt/l0_pt, vmem_map, vmem_enable
 ├── tests/
-│   └── test_ecall.c  — 12 тестов: sys_putchar, арифметика, Sv32 vmem, stack canary
+│   └── test_ecall.c  — 20 тестов: sys_putchar, арифметика, Sv32 vmem, stack canary, pipe
 ├── CMakeLists.txt
 └── README.md
 ```
@@ -100,23 +104,20 @@ cmake --build build -j$(nproc)
 
 ```bash
 # Запустить ядро
-./build/rv32i_cpu os/build/xoros.bin
+./build/rv32i/rv32i_cpu os/build/xoros.bin
 
 # Запустить тесты OS через CMake
-cmake --build build --target run_tests
+cmake --build os/build --target run_tests
 ```
 
 Ожидаемый вывод ядра:
 
 ```plaintext
 Hello from XorOS!
-task A: hello
-task B: hello
-task A: bye
-task B: bye
+hi
 kernel: all done
 
-cache: 11282 hits / 1625 misses | 87.4% hit rate
+cache: 8262 hits / 1932 misses | 81.0% hit rate
 ```
 
 Ожидаемый вывод тестов:
@@ -140,10 +141,20 @@ cache: 11282 hits / 1625 misses | 87.4% hit rate
 [PASS] canary set on spawn
 [PASS] canary intact after normal exit
 
-passed: 12
+--- pipe ---
+[PASS] pipe_init: count == 0
+[PASS] pipe_write returns 0
+[PASS] pipe_read returns 0
+[PASS] pipe_read correct byte
+[PASS] pipe_read empty returns -1
+[PASS] pipe_write full returns -1
+[PASS] pipe wrap-around write ok
+[PASS] pipe wrap-around read ok
+
+passed: 20
 failed: 0
 
-cache: 22086 hits / 1160 misses | 95.0% hit rate
+cache: 66707 hits / 3106 misses | 95.6% hit rate
 ```
 
 ---
@@ -180,4 +191,12 @@ cache: 22086 hits / 1160 misses | 95.0% hit rate
 
 ## Дорожная карта
 
+- [ ] mret — переход из M-mode в S-mode перед вызовом kernel_main
+- [ ] kalloc — простой распределитель физических страниц (bump allocator)
+- [ ] uart/MMIO драйвер вместо ecall для вывода
+- [ ] U-mode + CAUSE_ECALL_U handler — системные вызовы без паники
+- [ ] spinlock / критические секции
+- [ ] таймерное прерывание — вытесняющий планировщик
+- [ ] Динамический список процессов — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
+- [ ] pipe — однонаправленный буфер между процессами
 - [ ] CoreMark — bare-metal бенчмарк производительности
