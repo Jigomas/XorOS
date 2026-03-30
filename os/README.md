@@ -193,10 +193,8 @@ cache: 66707 hits / 3106 misses | 95.6% hit rate
 
 - [ ] mret — переход из M-mode в S-mode перед вызовом kernel_main
 - [ ] kalloc — простой распределитель физических страниц (bump allocator)
-- [ ] uart/MMIO драйвер вместо ecall для вывода
 - [ ] U-mode + CAUSE_ECALL_U handler — системные вызовы без паники
 - [ ] spinlock / критические секции
 - [ ] таймерное прерывание — вытесняющий планировщик
 - [ ] Динамический список процессов — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
-- [ ] pipe — однонаправленный буфер между процессами
 - [ ] CoreMark — bare-metal бенчмарк производительности

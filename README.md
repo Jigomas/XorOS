@@ -25,8 +25,9 @@
 **Ядро ОС** (`os/`) — bare-metal программа на C11 и ассемблере, компилируется без libc.
 Загрузчик (`boot.S`) инициализирует стек (`SP = 0x2000`) и вызывает `kernel_main`.
 Симулятор загружает скомпилированный бинарник по адресу `0x0` и начинает исполнение с PC=0.
-Единственный интерфейс с внешним миром — два системных вызова через `ecall`:
-`sys_putchar` (вывод символа) и `sys_exit` (завершение). Покрыта тестами.
+Вывод реализован через минимальный UART-драйвер (`uart.c`): запись по MMIO-адресу `0xF000`
+перехватывается симулятором и выводится в stdout. Межпроцессное взаимодействие реализовано
+через однонаправленный кольцевой буфер — pipe (`pipe.c`). Покрыта тестами.
 
 ```plaintext
 ┌─────────────────────────────────────────┐
@@ -120,13 +121,10 @@ cmake --build build -j$(nproc)
 
 ```plaintext
 Hello from XorOS!
-task A: hello
-task B: hello
-task A: bye
-task B: bye
+hi
 kernel: all done
 
-cache: 11282 hits / 1625 misses | 87.4% hit rate
+cache: 8227 hits / 1929 misses | 81.0% hit rate
 ```
 
 ### Запуск тестов OS
@@ -149,7 +147,22 @@ cmake --build os/build --target run_tests
 [PASS] write+read via virtual addr
 [PASS] arithmetic after vmem_enable: 6*7=42
 
-passed: 12
+--- canary ---
+[PASS] STACK_CANARY == 0xDEADBEEF
+[PASS] canary set on spawn
+[PASS] canary intact after normal exit
+
+--- pipe ---
+[PASS] pipe_init: count == 0
+[PASS] pipe_write returns 0
+[PASS] pipe_read returns 0
+[PASS] pipe_read correct byte
+[PASS] pipe_read empty returns -1
+[PASS] pipe_write full returns -1
+[PASS] pipe wrap-around write ok
+[PASS] pipe wrap-around read ok
+
+passed: 20
 failed: 0
 ```
 
@@ -214,7 +227,6 @@ failed: 0
 - [ ] spinlock / критические секции
 - [ ] таймерное прерывание — вытесняющий планировщик
 - [ ] Динамический список процессов — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
-- [ ] pipe — однонаправленный буфер между процессами
 - [ ] CoreMark — bare-metal бенчмарк производительности
 
 ## Литература, без которой реализация проекта была бы невозможной

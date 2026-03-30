@@ -1,4 +1,8 @@
+#include <stddef.h>
+
 #include "ecall.h"
+#include "kalloc.h"
+#include "spinlock.h"
 #include "pipe.h"
 #include "process.h"
 #include "scheduler.h"
@@ -115,6 +119,25 @@ void kernel_main(void) {
         pipe_read(&p, &c);
     check("pipe wrap-around write ok", pipe_write(&p, 'W') == 0);
     check("pipe wrap-around read ok", pipe_read(&p, &c) == 0 && c == 'W');
+
+    print("\n--- kalloc ---\n");
+
+    void* pg1 = kalloc();
+    check("kalloc returns non-NULL", pg1 != NULL);
+    check("kalloc page-aligned", ((uint32_t) pg1 % PAGE_SIZE) == 0);
+
+    void* pg2 = kalloc();
+    check("two allocs differ", pg1 != pg2);
+    check("pages are PAGE_SIZE apart", (uint32_t) pg2 - (uint32_t) pg1 == PAGE_SIZE);
+
+    print("\n--- spinlock ---\n");
+
+    spinlock_t sl = SPINLOCK_INIT;
+    check("spinlock_init: unlocked", sl.locked == 0);
+    spinlock_lock(&sl);
+    check("spinlock_lock: locked", sl.locked == 1);
+    spinlock_unlock(&sl);
+    check("spinlock_unlock: unlocked", sl.locked == 0);
 
     print("\npassed: ");
     print_int(passed);

@@ -53,6 +53,8 @@ static const char* cause_name(uint32_t mcause) {
             return "store access fault";
         case CAUSE_ECALL_U:
             return "ecall from U-mode";
+        case CAUSE_ECALL_S:
+            return "ecall from S-mode";
         case CAUSE_ECALL_M:
             return "ecall from M-mode";
         case CAUSE_INSN_PAGE_FAULT:

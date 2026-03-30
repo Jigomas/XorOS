@@ -21,6 +21,8 @@ typedef enum {
 #define MSTATUS_MIE  (1u << 3)   // global machine interrupt enable
 #define MSTATUS_MPIE (1u << 7)   // saved MIE before trap
 #define MSTATUS_MPP  (3u << 11)  // previous privilege mode (2 bits)
+#define MSTATUS_MPP_S (1u << 11) // MPP = S-mode (01)
+#define MSTATUS_MPP_M (3u << 11) // MPP = M-mode (11)
 
 // mcause: bit 31 = 1 - interrupt, 0 - exception
 #define MCAUSE_INT (1u << 31)
@@ -36,6 +38,7 @@ typedef enum {
     CAUSE_STORE_MISALIGN   = 6,   // store address misaligned
     CAUSE_STORE_FAULT      = 7,   // store access fault
     CAUSE_ECALL_U          = 8,   // ecall from U-mode
+    CAUSE_ECALL_S          = 9,   // ecall from S-mode
     CAUSE_ECALL_M          = 11,  // ecall from M-mode
     CAUSE_INSN_PAGE_FAULT  = 12,  // instruction page fault
     CAUSE_LOAD_PAGE_FAULT  = 13,  // load page fault
