@@ -6,7 +6,7 @@
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-blue)
 ![RISC-V](https://img.shields.io/badge/arch-RISC--V%20RV32IA-green)
 ![CMake](https://img.shields.io/badge/build-CMake-informational)
-![tests](https://img.shields.io/badge/tests-27%20passing-brightgreen)
+
 
 ---
 
@@ -50,16 +50,16 @@
 ┌──────────────────────────────────────────────────────┐
 │                     XorOS  (os/)                     │
 │                                                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐  │
-│  │ kernel_main  │  │  scheduler   │  │   vmem    │  │
-│  └──────────────┘  └──────────────┘  └───────────┘  │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐   │
+│  │ kernel_main  │  │  scheduler   │  │   vmem    │   │
+│  └──────────────┘  └──────────────┘  └───────────┘   │
 │  ┌────────────────────────────────────────────────┐  │
 │  │            trap.S / trap.c  (mtvec)            │  │
 │  └────────────────────────────────────────────────┘  │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐  │
-│  │   uart.c     │  │   pipe.c     │  │  kalloc   │  │
-│  │ MMIO 0xF000  │  │  ring buf    │  │   bump    │  │
-│  └──────────────┘  └──────────────┘  └───────────┘  │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐   │
+│  │   uart.c     │  │   pipe.c     │  │  kalloc   │   │
+│  │ MMIO 0xF000  │  │  ring buf    │  │   bump    │   │
+│  └──────────────┘  └──────────────┘  └───────────┘   │
 └──────────────────────────────────────────────────────┘
           │  ecall (a7)              │  MMIO 0xF000
           ▼                          ▼
@@ -71,7 +71,7 @@
 │  │  RV32I + M-ext + A-ext     │◄─┤ a7=1  putchar  │  │
 │  │  single-cycle              │  │ a7=10   halt   │  │
 │  └─────────────┬──────────────┘  └────────────────┘  │
-│                │  fetch / load / store                │
+│                │  fetch / load / store               │
 │  ┌─────────────▼──────────────┐                      │
 │  │    CacheModel<32>   LRU    │                      │
 │  │  64 words · write-through  │                      │
