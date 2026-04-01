@@ -5,10 +5,9 @@
 
 ОС:
 // TODO: U-mode + CAUSE_ECALL_U handler → системные вызовы без паники
-// TODO: syscall table — таблица указателей вместо if/else в ecall-хендлере
 // TODO: per-process page tables — изоляция процессов; требует kalloc + U-mode + правки trap.S
 // TODO: sbrk(n) syscall — расширение адресного пространства процесса через kalloc + vmem_map
-// TODO: spinlock / критические секции
+// TODO: демо дедлока — два процесса берут два spinlock-а в разном порядке; добавить watchdog-таймер или детектор
 // TODO: таймерное прерывание → вытесняющий планировщик (требует CLINT в симуляторе)
 // TODO: fork + wait — создание дочернего процесса и ожидание завершения
 // TODO: COW-форк — copy-on-write страницы; требует A-ext (sc.w для fault handler), ref-count в kalloc

@@ -9,7 +9,7 @@ typedef struct {
 
 #define SPINLOCK_INIT {0}
 
-static inline void spinlock_lock(spinlock_t* s) {
+static inline void spinlock_aquire(spinlock_t* s) {
     uint32_t tmp;
     uint32_t one = 1;
     do {
@@ -21,7 +21,7 @@ static inline void spinlock_lock(spinlock_t* s) {
     } while (tmp);
 }
 
-static inline void spinlock_unlock(spinlock_t* s) {
+static inline void spinlock_release(spinlock_t* s) {
     __asm__ volatile(
         "amoswap.w.rl x0, x0, (%0)" ::"r"(&s->locked) : "memory");
 }

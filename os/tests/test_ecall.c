@@ -2,10 +2,10 @@
 
 #include "ecall.h"
 #include "kalloc.h"
-#include "spinlock.h"
 #include "pipe.h"
 #include "process.h"
 #include "scheduler.h"
+#include "spinlock.h"
 #include "vmem.h"
 
 static int passed = 0;
@@ -134,10 +134,10 @@ void kernel_main(void) {
 
     spinlock_t sl = SPINLOCK_INIT;
     check("spinlock_init: unlocked", sl.locked == 0);
-    spinlock_lock(&sl);
-    check("spinlock_lock: locked", sl.locked == 1);
-    spinlock_unlock(&sl);
-    check("spinlock_unlock: unlocked", sl.locked == 0);
+    spinlock_aquire(&sl);
+    check("spinlock_aquire: locked", sl.locked == 1);
+    spinlock_release(&sl);
+    check("spinlock_release: unlocked", sl.locked == 0);
 
     print("\npassed: ");
     print_int(passed);
