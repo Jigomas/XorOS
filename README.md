@@ -55,9 +55,10 @@
 бинарник без заголовков. Симулятор копирует его в начало виртуальной памяти напрямую —
 никакого ELF-загрузчика. Стек располагается по адресу `0x2000` и растёт вниз в пределах 64 KiB.
 
-**ECALL вместо MMIO.** Вместо эмуляции UART по фиксированному адресу симулятор
-перехватывает `ecall` через C++ callback. ОС не привязана к адресу конкретного устройства
-и легко переносима между конфигурациями симулятора.
+**ECALL + MMIO UART.** Системные вызовы (`sys_putchar`, `sys_exit`) реализованы через `ecall`:
+в симуляторе зарегистрирована syscall table — массив функций с индексом по `a7`. Параллельно
+работает MMIO UART: `uart.c` пишет байт по адресу `0xF000`, симулятор перехватывает запись
+и выводит символ в stdout. Ядро использует UART-драйвер напрямую, `sys_putchar` — в тестах.
 
 **CacheModel как сменный слой памяти.** `RVModel` принимает тип памяти как шаблонный параметр
 (`RVModel<XLEN, MemT>`), что позволяет подставить `CacheModel<32>` вместо `MemoryModel<32>`
@@ -65,7 +66,7 @@
 и read-allocate: промах при чтении загружает слово в кэш, запись всегда проходит насквозь
 в `MemoryModel`. Размер кэша — 64 слова (256 байт). После исполнения симулятор печатает
 статистику: количество попаданий, промахов и hit rate. При прогоне ядра XorOS получается
-около 87% попаданий.
+около 96% попаданий.
 
 ---
 
@@ -184,7 +185,7 @@ failed: 0
 | M-extension       | MUL / MULH / MULHSU / MULHU / DIV / DIVU / REM / REMU         |
 | A-extension       | LR.W / SC.W + AMO(SWAP/ADD/XOR/AND/OR/MIN/MAX/MINU/MAXU)      |
 | CSR               | CSRRW / CSRRS / CSRRC / CSRRWI / CSRRSI / CSRRCI              |
-| ECALL             | Callback-хендлер (`setEcallHandler`); a7=1 putchar, a7=10 halt|
+| ECALL             | Syscall table (`setEcallHandler`); a7=1 putchar, a7=10 halt   |
 | Контекст          | `Context` (callee-saved) и `FullContext` (все 32 рег + PC)    |
 | Память            | Плоская, little-endian; LR/SC reservation; MMIO regions       |
 | CacheModel        | LRU-кэш (64 слова) поверх MemoryModel; write-through; hit/miss|
@@ -193,21 +194,23 @@ failed: 0
 
 ### ОС (`os/`)
 
-| Компонент       | Описание                                                           |
-|-----------------|--------------------------------------------------------------------|
-| `boot.S`        | Инициализация SP, GP, установка mtvec, вызов `kernel_main`         |
-| `ecall.h`       | `sys_putchar` / `sys_exit` через inline asm                        |
-| `csr.h`         | Адреса Machine-level CSR, коды mcause                              |
-| `trap.S`        | Точка входа trap-хендлера: сохранение регистров, `mret`            |
-| `trap.c`        | Диспетчеризация исключений по mcause, вывод причины, паника        |
-| `process.h`     | PCB: `proc_state_t`, `context_t` (callee-saved), `proc_t`          |
-| `scheduler.h/c` | Планировщик round-robin: `sched_init/spawn/yield/exit`             |
-| `sched_switch.S`| `context_switch` — сохранение/восстановление ra/sp/s0-s11          |
-| `vmem.h/c`      | Sv32 виртуальная память: identity map, satp, sfence.vma (NOP)      |
-| `pipe.h/c`      | Кольцевой буфер (16 байт); non-blocking pipe_write/read            |
-| `uart.h/c`      | MMIO UART: uart_putchar/puts → запись в 0xF000                     |
-| `kernel_main`   | Демо pipe + UART: task_a пишет в pipe, task_b читает через UART    |
-| Тесты           | 20 тестов: putchar, арифметика, Sv32 vmem, stack canary, pipe      |
+| Компонент        | Описание                                                                   |
+|------------------|----------------------------------------------------------------------------|
+| `boot.S`         | Инициализация SP, GP, mtvec, mret (M->S mode), вызов `kernel_main`         |
+| `ecall.h`        | `sys_putchar` / `sys_exit` через inline asm                                |
+| `csr.h`          | Адреса Machine-level CSR, коды mcause                                      |
+| `trap.S`         | Точка входа trap-хендлера: сохранение caller-saved, `mret`                 |
+| `trap.c`         | Диспетчеризация исключений по mcause, вывод причины, паника                |
+| `kalloc.h/c`     | Bump allocator: статический heap[4×4KiB], PAGE_SIZE=4096                   |
+| `spinlock.h`     | Header-only spinlock через `amoswap.w.aq` / `amoswap.w.rl` (A-ext)         |
+| `process.h`      | PCB: `proc_state_t`, `context_t` (callee-saved), `proc_t`                  |
+| `scheduler.h/c`  | Планировщик round-robin: `sched_init/spawn/yield/exit`                     |
+| `sched_switch.S` | `context_switch` — сохранение/восстановление ra/sp/s0-s11                  |
+| `vmem.h/c`       | Sv32 виртуальная память: identity map, satp, sfence.vma (NOP)              |
+| `pipe.h/c`       | Кольцевой буфер (16 байт); non-blocking pipe_write/read                    |
+| `uart.h/c`       | MMIO UART: uart_putchar/puts → запись в 0xF000                             |
+| `kernel_main`    | Демо pipe + UART: task_a пишет в pipe, task_b читает через UART            |
+| Тесты            | 27 тестов: putchar, арифметика, Sv32 vmem, canary, pipe, kalloc, spinlock  |
 
 > Список процессов в планировщике планируется расширить до динамического array-of-slots без malloc на основе [Jigomas/List](https://github.com/Jigomas/List).
 
@@ -217,15 +220,20 @@ failed: 0
 
 ### Симулятор
 
+- [ ] CLINT — mtime/mtimecmp по MMIO; нужен для таймерного прерывания
+- [ ] уровни привилегий в CPU — текущий режим M/S/U; Illegal Instruction при CSR-доступе из U-режима
+- [ ] ecall через fireTrap — убрать C++ колбек, пустить ecall → fireTrap → mtvec → trap_handler
 - [ ] ELF-загрузчик
 
 ### ОС
 
-- [ ] mret — переход из M-mode в S-mode перед вызовом kernel_main
-- [ ] kalloc — простой распределитель физических страниц (bump allocator)
 - [ ] U-mode + CAUSE_ECALL_U handler — системные вызовы без паники
-- [ ] spinlock / критические секции
-- [ ] таймерное прерывание — вытесняющий планировщик
+- [ ] полная 32-регистровая рамка в trap.S — нужна для preemption
+- [ ] per-process page tables — изоляция процессов; требует поля satp в process.h
+- [ ] kfree() + свободный список страниц
+- [ ] таймерное прерывание → вытесняющий планировщик (требует CLINT)
+- [ ] fork + wait
+- [ ] COW-форк — ref-count в kalloc, sc.w для fault handler
 - [ ] Динамический список процессов — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
 - [ ] CoreMark — bare-metal бенчмарк производительности
 

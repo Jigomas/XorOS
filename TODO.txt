@@ -1,14 +1,20 @@
 Процессор:
 // TODO: CLINT — mtime/mtimecmp по MMIO; нужен для таймерного прерывания в ОС
+// TODO: уровни привилегий в CPU — хранить текущий режим M/S/U; кидать Illegal Instruction при CSR-доступе из U-режима
+// TODO: ecall через fireTrap — убрать C++ колбек, пустить ecall → fireTrap(CAUSE_ECALL_M) → mtvec → trap_handler
 // TODO: ELF-загрузчик
 // TODO: расширения F / D / C (A уже сделано)
 
 ОС:
 // TODO: U-mode + CAUSE_ECALL_U handler → системные вызовы без паники
-// TODO: per-process page tables — изоляция процессов; требует kalloc + U-mode + правки trap.S
+// TODO: полная 32-регистровая рамка в trap.S — нужна для preemption (сейчас только caller-saved, по ABI верно, но недостаточно)
+// TODO: per-process page tables — изоляция процессов; process.h нужно поле satp; требует kalloc + U-mode + правки trap.S
+// TODO: PTE_U — флаги пользовательских страниц; требует per-process PT
+// TODO: kfree() + свободный список страниц — kalloc сейчас bump без освобождения
 // TODO: sbrk(n) syscall — расширение адресного пространства процесса через kalloc + vmem_map
+// TODO: блокирующий pipe + BLOCKED-состояние — сейчас дропает при переполнении; нужна очередь ожидающих + wake-up
+// TODO: таймерное прерывание → вытесняющий планировщик (требует CLINT + полную рамку в trap.S)
 // TODO: демо дедлока — два процесса берут два spinlock-а в разном порядке; добавить watchdog-таймер или детектор
-// TODO: таймерное прерывание → вытесняющий планировщик (требует CLINT в симуляторе)
 // TODO: fork + wait — создание дочернего процесса и ожидание завершения
 // TODO: COW-форк — copy-on-write страницы; требует A-ext (sc.w для fault handler), ref-count в kalloc
 // TODO: заменить статический массив процессов в планировщике на array-of-slots список (Jigomas/List)
