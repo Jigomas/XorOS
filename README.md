@@ -1,5 +1,9 @@
 # XorOS
 
+<p align="left">
+  <img src="logo.png" width="200" alt="XorOS Logo">
+</p>
+
 Минимальная bare-metal операционная система, написанная с нуля поверх самописного симулятора RISC-V.
 
 ![C11](https://img.shields.io/badge/C-C11-blue)
