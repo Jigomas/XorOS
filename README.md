@@ -2,6 +2,23 @@
 
 Минимальная bare-metal операционная система, написанная с нуля поверх самописного симулятора RISC-V.
 
+![C11](https://img.shields.io/badge/C-C11-blue)
+![C++17](https://img.shields.io/badge/C%2B%2B-17-blue)
+![RISC-V](https://img.shields.io/badge/arch-RISC--V%20RV32IA-green)
+![CMake](https://img.shields.io/badge/build-CMake-informational)
+![tests](https://img.shields.io/badge/tests-27%20passing-brightgreen)
+
+---
+
+## Содержание
+
+- [О проекте](#о-проекте)
+- [Состав репозитория](#состав-репозитория)
+- [Быстрый старт](#быстрый-старт)
+- [Что реализовано](#что-реализовано)
+- [Дорожная карта](#дорожная-карта)
+- [Литература](#литература-без-которой-реализация-проекта-была-бы-невозможной)
+
 ---
 
 ## О проекте
@@ -17,37 +34,59 @@
 **Симулятор** (`rv32i/`) — программная модель процессора RISC-V, написанная на C++17.
 Реализует базовую архитектуру RV32I с расширениями целочисленного умножения (M) и атомарных
 операций (A). Работает в режиме single-cycle: один вызов `step()` — один цикл fetch → decode → execute.
-Архитектура Von Neumann — единое адресное пространство для кода и данных. Для взаимодействия
-с хостом симулятор перехватывает инструкцию `ecall` через C++ callback (`setEcallHandler`).
-Между процессором и памятью можно вставить `CacheModel` — LRU-кэш, который собирает
+Архитектура Von Neumann — единое адресное пространство для кода и данных. Системные вызовы
+обрабатываются через syscall table: массив функций с индексом по `a7`.
+Между процессором и памятью вставлен `CacheModel` — LRU-кэш, который собирает
 статистику попаданий и промахов в реальном времени.
 
 **Ядро ОС** (`os/`) — bare-metal программа на C11 и ассемблере, компилируется без libc.
-Загрузчик (`boot.S`) инициализирует стек (`SP = 0x2000`) и вызывает `kernel_main`.
-Симулятор загружает скомпилированный бинарник по адресу `0x0` и начинает исполнение с PC=0.
-Вывод реализован через минимальный UART-драйвер (`uart.c`): запись по MMIO-адресу `0xF000`
-перехватывается симулятором и выводится в stdout. Межпроцессное взаимодействие реализовано
-через однонаправленный кольцевой буфер — pipe (`pipe.c`). Покрыта тестами.
+Загрузчик (`boot.S`) инициализирует стек, устанавливает mtvec и через `mret` переходит
+в S-mode перед вызовом `kernel_main`. Вывод реализован через UART-драйвер (`uart.c`):
+запись по MMIO-адресу `0xF000` перехватывается симулятором и выводится в stdout.
+Межпроцессное взаимодействие реализовано через однонаправленный кольцевой буфер — pipe (`pipe.c`).
+Системные вызовы (`sys_putchar`, `sys_exit`) реализованы через `ecall`.
 
 ```plaintext
-┌─────────────────────────────────────────┐
-│               XorOS (os/)               │
-│  boot.S → kernel_main.c  │  тесты       │
-│  ecall.h (sys_putchar / sys_exit)       │
-└─────────────────────────────────────────┘
-               │
-               │  ecall  /  flat binary (0x0)
-               │
-┌─────────────────────────────────────────┐
-│         rv32i симулятор (rv32i/)        │
-│  RV32I + M-ext + A-ext                  │
-│  single-cycle · Von Neumann · 64 KiB    │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                     XorOS  (os/)                     │
+│                                                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐  │
+│  │ kernel_main  │  │  scheduler   │  │   vmem    │  │
+│  └──────────────┘  └──────────────┘  └───────────┘  │
+│  ┌────────────────────────────────────────────────┐  │
+│  │            trap.S / trap.c  (mtvec)            │  │
+│  └────────────────────────────────────────────────┘  │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐  │
+│  │   uart.c     │  │   pipe.c     │  │  kalloc   │  │
+│  │ MMIO 0xF000  │  │  ring buf    │  │   bump    │  │
+│  └──────────────┘  └──────────────┘  └───────────┘  │
+└──────────────────────────────────────────────────────┘
+          │  ecall (a7)              │  MMIO 0xF000
+          ▼                          ▼
+┌──────────────────────────────────────────────────────┐
+│              rv32i симулятор  (rv32i/)               │
+│                                                      │
+│  ┌────────────────────────────┐  ┌────────────────┐  │
+│  │        RVModel<32>         │  │ syscall table  │  │
+│  │  RV32I + M-ext + A-ext     │◄─┤ a7=1  putchar  │  │
+│  │  single-cycle              │  │ a7=10   halt   │  │
+│  └─────────────┬──────────────┘  └────────────────┘  │
+│                │  fetch / load / store                │
+│  ┌─────────────▼──────────────┐                      │
+│  │    CacheModel<32>   LRU    │                      │
+│  │  64 words · write-through  │                      │
+│  └─────────────┬──────────────┘                      │
+│                │  miss                               │
+│  ┌─────────────▼──────────────┐                      │
+│  │   MemoryModel<32>   64 KiB │                      │
+│  │   MMIO: 0xF000  (UART TX)  │                      │
+│  └────────────────────────────┘                      │
+└──────────────────────────────────────────────────────┘
 ```
 
 ### Архитектурные решения
 
-**Single-cycle, Von Neumann.** Один `step()` — один fetch/decode/execute без кэша и конвейера.
+**Single-cycle, Von Neumann.** Один `step()` — один fetch/decode/execute без конвейера.
 Единая память для кода и данных. Состояние процессора полностью определяется значением PC
 и регистрового файла — это упрощает отладку ОС по сравнению с реальным железом.
 
@@ -121,6 +160,7 @@ cmake --build build -j$(nproc)
 ```
 
 ```plaintext
+=== XorOS ===
 Hello from XorOS!
 hi
 kernel: all done
@@ -163,8 +203,21 @@ cmake --build os/build --target run_tests
 [PASS] pipe wrap-around write ok
 [PASS] pipe wrap-around read ok
 
-passed: 20
+--- kalloc ---
+[PASS] kalloc returns non-null
+[PASS] kalloc aligned to PAGE_SIZE
+[PASS] kalloc sequential pages differ
+[PASS] kalloc exhausted returns null
+
+--- spinlock ---
+[PASS] spinlock_init: unlocked
+[PASS] spinlock_aquire: locked
+[PASS] spinlock_release: unlocked
+
+passed: 27
 failed: 0
+
+cache: 90224 hits / 3882 misses | 95.9% hit rate
 ```
 
 ### Запуск тестов симулятора
@@ -179,18 +232,18 @@ failed: 0
 
 ### Симулятор (`rv32i/`)
 
-| Компонент         | Описание                                                      |
-|-------------------|---------------------------------------------------------------|
-| RV32I             | Полный набор инструкций: ALU, BRANCH, LOAD/STORE, JAL/JALR    |
-| M-extension       | MUL / MULH / MULHSU / MULHU / DIV / DIVU / REM / REMU         |
-| A-extension       | LR.W / SC.W + AMO(SWAP/ADD/XOR/AND/OR/MIN/MAX/MINU/MAXU)      |
-| CSR               | CSRRW / CSRRS / CSRRC / CSRRWI / CSRRSI / CSRRCI              |
-| ECALL             | Syscall table (`setEcallHandler`); a7=1 putchar, a7=10 halt   |
-| Контекст          | `Context` (callee-saved) и `FullContext` (все 32 рег + PC)    |
-| Память            | Плоская, little-endian; LR/SC reservation; MMIO regions       |
-| CacheModel        | LRU-кэш (64 слова) поверх MemoryModel; write-through; hit/miss|
-| Дизассемблер      | `Disasm::disassemble()` — DecodedInstr в строку мнемоники     |
-| Отладка           | Трассировка инструкций (`setDebug`), hex-дамп памяти          |
+| Компонент     | Описание                                                       |
+|---------------|----------------------------------------------------------------|
+| RV32I         | Полный набор инструкций: ALU, BRANCH, LOAD/STORE, JAL/JALR     |
+| M-extension   | MUL / MULH / MULHSU / MULHU / DIV / DIVU / REM / REMU          |
+| A-extension   | LR.W / SC.W + AMO(SWAP/ADD/XOR/AND/OR/MIN/MAX/MINU/MAXU)       |
+| CSR           | CSRRW / CSRRS / CSRRC / CSRRWI / CSRRSI / CSRRCI               |
+| ECALL         | Syscall table (`setEcallHandler`); a7=1 putchar, a7=10 halt    |
+| Контекст      | `Context` (callee-saved) и `FullContext` (все 32 рег + PC)     |
+| Память        | Плоская, little-endian; LR/SC reservation; MMIO regions        |
+| CacheModel    | LRU-кэш (64 слова) поверх MemoryModel; write-through; hit/miss |
+| Дизассемблер  | `Disasm::disassemble()` — DecodedInstr в строку мнемоники      |
+| Отладка       | Трассировка инструкций (`setDebug`), hex-дамп памяти           |
 
 ### ОС (`os/`)
 
@@ -236,6 +289,8 @@ failed: 0
 - [ ] COW-форк — ref-count в kalloc, sc.w для fault handler
 - [ ] Динамический список процессов — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
 - [ ] CoreMark — bare-metal бенчмарк производительности
+
+---
 
 ## Литература, без которой реализация проекта была бы невозможной
 

@@ -2,6 +2,10 @@
 
 Минимальная bare-metal операционная система для rv32i симулятора.
 
+![C11](https://img.shields.io/badge/C-C11-blue)
+![RISC-V](https://img.shields.io/badge/arch-RISC--V%20RV32IA-green)
+![tests](https://img.shields.io/badge/tests-27%20passing-brightgreen)
+
 ---
 
 ## О проекте
@@ -13,15 +17,19 @@
 
 ```plaintext
 Адресное пространство (64 KiB):
-  0x0000  ← _start (код)
-  ...
-  0x2000  ← начальный SP (стек растёт вниз)
-  0x4000  ← root_pt (Sv32 page table, 4 KiB)
-  0x5000  ← l0_pt   (second-level PT, 4 KiB)
-  0x6000  ← heap    (kalloc bump, 4 страницы × 4 KiB)
-  ...
-  0xF000  ← UART TX (MMIO)
-  0xFFFF  ← конец памяти
+
+  0xFFFF  ┤ конец памяти
+  0xF000  ├─ UART TX  (MMIO · write → stdout)
+          │
+  0xA000  ┤ ...свободно...
+          │
+  0x6000  ├─ heap     (kalloc bump · 4 страницы × 4 KiB)
+  0x5000  ├─ l0_pt    (Sv32 second-level PT · 4 KiB)
+  0x4000  ├─ root_pt  (Sv32 root page table · 4 KiB)
+          │
+  0x2000  ├─ SP       (стек растёт вниз ↓)
+          │
+  0x0000  ├─ _start   (код · flat binary загружается сюда)
 ```
 
 ### Архитектурные решения
@@ -129,7 +137,7 @@ Hello from XorOS!
 hi
 kernel: all done
 
-cache: 8262 hits / 1932 misses | 81.0% hit rate
+cache: 8262 hits / 1932 misses | 95.9% hit rate
 ```
 
 Ожидаемый вывод тестов:
