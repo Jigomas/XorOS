@@ -25,9 +25,21 @@ trap_entry:
     csrr  a0, mcause
     csrr  a1, mepc
     csrr  a2, mtval
+    mv    a3, sp        # 4th arg: pointer to saved caller-saved frame
     call  trap_handler
 
-    lw    ra,  0(sp)
+    # advance mepc past ecall instruction (mepc += 4 for ecall causes)
+    csrr  t0, mcause
+    li    t1, 8         # CAUSE_ECALL_U
+    beq   t0, t1, 1f
+    li    t1, 9         # CAUSE_ECALL_S
+    beq   t0, t1, 1f
+    li    t1, 11        # CAUSE_ECALL_M
+    bne   t0, t1, 2f
+1:  csrr  t0, mepc
+    addi  t0, t0, 4
+    csrw  mepc, t0
+2:  lw    ra,  0(sp)
     lw    a0,  4(sp)
     lw    a1,  8(sp)
     lw    a2, 12(sp)

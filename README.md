@@ -38,8 +38,9 @@
 **Симулятор** (`rv32i/`) — программная модель процессора RISC-V, написанная на C++17.
 Реализует базовую архитектуру RV32I с расширениями целочисленного умножения (M) и атомарных
 операций (A). Работает в режиме single-cycle: один вызов `step()` — один цикл fetch → decode → execute.
-Архитектура Von Neumann — единое адресное пространство для кода и данных. Системные вызовы
-обрабатываются через syscall table: массив функций с индексом по `a7`.
+Архитектура Von Neumann — единое адресное пространство для кода и данных. Симулятор отслеживает
+уровень привилегий (`PrivMode` M/S/U): `mret` восстанавливает его из `mstatus.MPP`, а `ecall`
+кидает `fireTrap(EXC_ECALL_U/S/M)` — управление напрямую уходит на `mtvec` в ОС.
 Между процессором и памятью вставлен `CacheModel` — LRU-кэш, который собирает
 статистику попаданий и промахов в реальном времени.
 
@@ -47,8 +48,8 @@
 Загрузчик (`boot.S`) инициализирует стек, устанавливает mtvec и через `mret` переходит
 в S-mode перед вызовом `kernel_main`. Вывод реализован через UART-драйвер (`uart.c`):
 запись по MMIO-адресу `0xF000` перехватывается симулятором и выводится в stdout.
-Межпроцессное взаимодействие реализовано через однонаправленный кольцевой буфер — pipe (`pipe.c`).
-Системные вызовы (`sys_putchar`, `sys_exit`) реализованы через `ecall`.
+Системные вызовы (`ecall`) обрабатываются ОС: `trap.S` сохраняет кадр регистров и передаёт
+указатель на него в `trap_handler`; `trap.c` читает `a7` из кадра и диспетчеризует вызов.
 
 ```plaintext
 ┌──────────────────────────────────────────────────────┐
@@ -58,33 +59,36 @@
 │  │ kernel_main  │  │  scheduler   │  │   vmem    │   │
 │  └──────────────┘  └──────────────┘  └───────────┘   │
 │  ┌────────────────────────────────────────────────┐  │
-│  │            trap.S / trap.c  (mtvec)            │  │
+│  │   trap.S (mtvec) · trap.c (ecall / exceptions) │  │
 │  └────────────────────────────────────────────────┘  │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────┐   │
 │  │   uart.c     │  │   pipe.c     │  │  kalloc   │   │
 │  │ MMIO 0xF000  │  │  ring buf    │  │   bump    │   │
 │  └──────────────┘  └──────────────┘  └───────────┘   │
 └──────────────────────────────────────────────────────┘
-          │  ecall (a7)              │  MMIO 0xF000
-          ▼                          ▼
+       │ ecall → fireTrap          │ MMIO 0xF000
+       │ (EXC_ECALL_U/S/M)         │
+       ▼                           ▼
 ┌──────────────────────────────────────────────────────┐
 │              rv32i симулятор  (rv32i/)               │
 │                                                      │
-│  ┌────────────────────────────┐  ┌────────────────┐  │
-│  │        RVModel<32>         │  │ syscall table  │  │
-│  │  RV32I + M-ext + A-ext     │◄─┤ a7=1  putchar  │  │
-│  │  single-cycle              │  │ a7=10   halt   │  │
-│  └─────────────┬──────────────┘  └────────────────┘  │
-│                │  fetch / load / store               │
-│  ┌─────────────▼──────────────┐                      │
-│  │    CacheModel<32>   LRU    │                      │
-│  │  64 words · write-through  │                      │
-│  └─────────────┬──────────────┘                      │
-│                │  miss                               │
-│  ┌─────────────▼──────────────┐                      │
-│  │   MemoryModel<32>   64 KiB │                      │
-│  │   MMIO: 0xF000  (UART TX)  │                      │
-│  └────────────────────────────┘                      │
+│  ┌──────────────────────────────────────────────┐    │
+│  │         RVModel<32>   PrivMode M/S/U         │    │
+│  │  RV32I + M-ext + A-ext · single-cycle        │    │
+│  │  ecall → fireTrap → mtvec                    │    │
+│  │  CSR-доступ: проверка привилегий addr[9:8]   │    │
+│  │  PTE.U=0: page fault в U-mode                │    │
+│  └─────────────────────┬────────────────────────┘    │
+│                        │  fetch / load / store       │
+│  ┌─────────────────────▼────────────────────────┐    │
+│  │      CacheModel<32>   LRU · 64 слов          │    │
+│  │      write-through · read-allocate           │    │
+│  └─────────────────────┬────────────────────────┘    │
+│                        │  miss                       │
+│  ┌─────────────────────▼────────────────────────┐    │
+│  │   MemoryModel<32>   64 KiB                   │    │
+│  │   MMIO: 0xF000  (UART TX → stdout)           │    │
+│  └──────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -98,18 +102,17 @@
 бинарник без заголовков. Симулятор копирует его в начало виртуальной памяти напрямую —
 никакого ELF-загрузчика. Стек располагается по адресу `0x2000` и растёт вниз в пределах 64 KiB.
 
-**ECALL + MMIO UART.** Системные вызовы (`sys_putchar`, `sys_exit`) реализованы через `ecall`:
-в симуляторе зарегистрирована syscall table — массив функций с индексом по `a7`. Параллельно
-работает MMIO UART: `uart.c` пишет байт по адресу `0xF000`, симулятор перехватывает запись
-и выводит символ в stdout. Ядро использует UART-драйвер напрямую, `sys_putchar` — в тестах.
+**ECALL через fireTrap.** При встрече инструкции `ecall` симулятор не вызывает никакой C++
+функции — он определяет причину (EXC_ECALL_U, EXC_ECALL_S или EXC_ECALL_M по текущему
+`PrivMode`) и передаёт управление на `mtvec`. Обработчик в ОС (`trap.c`) получает указатель
+на кадр сохранённых регистров, читает `a7` и диспетчеризует вызов. Это стандартное поведение
+RISC-V: симулятор не знает про OS, OS не знает про C++.
 
 **CacheModel как сменный слой памяти.** `RVModel` принимает тип памяти как шаблонный параметр
 (`RVModel<XLEN, MemT>`), что позволяет подставить `CacheModel<32>` вместо `MemoryModel<32>`
 без изменения ядра симулятора. `CacheModel` реализует LRU-кэш с политикой write-through
-и read-allocate: промах при чтении загружает слово в кэш, запись всегда проходит насквозь
-в `MemoryModel`. Размер кэша — 64 слова (256 байт). После исполнения симулятор печатает
-статистику: количество попаданий, промахов и hit rate. При прогоне ядра XorOS получается
-около 96% попаданий.
+и read-allocate. Размер кэша — 64 слова (256 байт). После исполнения симулятор печатает
+статистику: количество попаданий, промахов и hit rate.
 
 ---
 
@@ -169,7 +172,7 @@ Hello from XorOS!
 hi
 kernel: all done
 
-cache: 8227 hits / 1929 misses | 81.0% hit rate
+cache: 8445 hits / 2011 misses | 80.8% hit rate
 ```
 
 ### Запуск тестов OS
@@ -208,10 +211,10 @@ cmake --build os/build --target run_tests
 [PASS] pipe wrap-around read ok
 
 --- kalloc ---
-[PASS] kalloc returns non-null
-[PASS] kalloc aligned to PAGE_SIZE
-[PASS] kalloc sequential pages differ
-[PASS] kalloc exhausted returns null
+[PASS] kalloc returns non-NULL
+[PASS] kalloc page-aligned
+[PASS] two allocs differ
+[PASS] pages are PAGE_SIZE apart
 
 --- spinlock ---
 [PASS] spinlock_init: unlocked
@@ -221,7 +224,7 @@ cmake --build os/build --target run_tests
 passed: 27
 failed: 0
 
-cache: 90224 hits / 3882 misses | 95.9% hit rate
+cache: 357940 hits / 169674 misses | 67.8% hit rate
 ```
 
 ### Запуск тестов симулятора
@@ -236,38 +239,40 @@ cache: 90224 hits / 3882 misses | 95.9% hit rate
 
 ### Симулятор (`rv32i/`)
 
-| Компонент     | Описание                                                       |
-|---------------|----------------------------------------------------------------|
-| RV32I         | Полный набор инструкций: ALU, BRANCH, LOAD/STORE, JAL/JALR     |
-| M-extension   | MUL / MULH / MULHSU / MULHU / DIV / DIVU / REM / REMU          |
-| A-extension   | LR.W / SC.W + AMO(SWAP/ADD/XOR/AND/OR/MIN/MAX/MINU/MAXU)       |
-| CSR           | CSRRW / CSRRS / CSRRC / CSRRWI / CSRRSI / CSRRCI               |
-| ECALL         | Syscall table (`setEcallHandler`); a7=1 putchar, a7=10 halt    |
-| Контекст      | `Context` (callee-saved) и `FullContext` (все 32 рег + PC)     |
-| Память        | Плоская, little-endian; LR/SC reservation; MMIO regions        |
-| CacheModel    | LRU-кэш (64 слова) поверх MemoryModel; write-through; hit/miss |
-| Дизассемблер  | `Disasm::disassemble()` — DecodedInstr в строку мнемоники      |
-| Отладка       | Трассировка инструкций (`setDebug`), hex-дамп памяти           |
+| Компонент     | Описание                                                              |
+|---------------|-----------------------------------------------------------------------|
+| RV32I         | Полный набор инструкций: ALU, BRANCH, LOAD/STORE, JAL/JALR            |
+| M-extension   | MUL / MULH / MULHSU / MULHU / DIV / DIVU / REM / REMU                 |
+| A-extension   | LR.W / SC.W + AMO(SWAP/ADD/XOR/AND/OR/MIN/MAX/MINU/MAXU)              |
+| CSR           | CSRRW / CSRRS / CSRRC / CSRRWI / CSRRSI / CSRRCI; проверка привилегий |
+| Привилегии    | PrivMode M/S/U; mret восстанавливает из MPP; fireTrap сохраняет в MPP |
+| ECALL         | fireTrap(EXC_ECALL_U/S/M) по текущему режиму → mtvec → OS             |
+| Sv32 vmem     | Двухуровневая трансляция; PTE.U проверяется в U-mode                  |
+| Контекст      | `Context` (callee-saved) и `FullContext` (все 32 рег + PC)            |
+| Память        | Плоская, little-endian; LR/SC reservation; MMIO regions               |
+| CacheModel    | LRU-кэш (64 слова) поверх MemoryModel; write-through; hit/miss        |
+| Дизассемблер  | `Disasm::disassemble()` — DecodedInstr в строку мнемоники             |
+| Отладка       | Трассировка инструкций (`setDebug`), hex-дамп памяти                  |
 
 ### ОС (`os/`)
 
-| Компонент        | Описание                                                                   |
-|------------------|----------------------------------------------------------------------------|
-| `boot.S`         | Инициализация SP, GP, mtvec, mret (M->S mode), вызов `kernel_main`         |
-| `ecall.h`        | `sys_putchar` / `sys_exit` через inline asm                                |
-| `csr.h`          | Адреса Machine-level CSR, коды mcause                                      |
-| `trap.S`         | Точка входа trap-хендлера: сохранение caller-saved, `mret`                 |
-| `trap.c`         | Диспетчеризация исключений по mcause, вывод причины, паника                |
-| `kalloc.h/c`     | Bump allocator: статический heap[4×4KiB], PAGE_SIZE=4096                   |
-| `spinlock.h`     | Header-only spinlock через `amoswap.w.aq` / `amoswap.w.rl` (A-ext)         |
-| `process.h`      | PCB: `proc_state_t`, `context_t` (callee-saved), `proc_t`                  |
-| `scheduler.h/c`  | Планировщик round-robin: `sched_init/spawn/yield/exit`                     |
-| `sched_switch.S` | `context_switch` — сохранение/восстановление ra/sp/s0-s11                  |
-| `vmem.h/c`       | Sv32 виртуальная память: identity map, satp, sfence.vma (NOP)              |
-| `pipe.h/c`       | Кольцевой буфер (16 байт); non-blocking pipe_write/read                    |
-| `uart.h/c`       | MMIO UART: uart_putchar/puts → запись в 0xF000                             |
-| `kernel_main`    | Демо pipe + UART: task_a пишет в pipe, task_b читает через UART            |
-| Тесты            | 27 тестов: putchar, арифметика, Sv32 vmem, canary, pipe, kalloc, spinlock  |
+| Компонент        | Описание                                                                    |
+|------------------|-----------------------------------------------------------------------------|
+| `boot.S`         | Инициализация SP, GP, mtvec, mret (M->S mode), вызов `kernel_main`          |
+| `ecall.h`        | `sys_putchar` / `sys_exit` через inline asm; обрабатываются OS trap_handler |
+| `csr.h`          | Адреса Machine-level CSR, коды mcause (включая CAUSE_ECALL_U/S/M)           |
+| `trap.S`         | trap_entry: сохранение caller-saved + SP (*frame), mepc+=4 для ecall, mret  |
+| `trap.c`         | ecall_handler (a7→uart/halt); диспетчеризация mcause; паника; do_halt       |
+| `kalloc.h/c`     | Bump allocator: статический heap[4×4KiB], PAGE_SIZE=4096                    |
+| `spinlock.h`     | Header-only spinlock через `amoswap.w.aq` / `amoswap.w.rl` (A-ext)          |
+| `process.h`      | PCB: `proc_state_t`, `context_t` (callee-saved), `proc_t`                   |
+| `scheduler.h/c`  | Планировщик round-robin: `sched_init/spawn/yield/exit`                      |
+| `sched_switch.S` | `context_switch` — сохранение/восстановление ra/sp/s0-s11                   |
+| `vmem.h/c`       | Sv32 виртуальная память: identity map, satp, sfence.vma (NOP)               |
+| `pipe.h/c`       | Кольцевой буфер (16 байт); non-blocking pipe_write/read                     |
+| `uart.h/c`       | MMIO UART: uart_putchar/puts → запись в 0xF000                              |
+| `kernel_main`    | Демо pipe + UART: task_a пишет в pipe, task_b читает через UART             |
+| Тесты            | 27 тестов: putchar, арифметика, Sv32 vmem, canary, pipe, kalloc, spinlock   |
 
 > Список процессов в планировщике планируется расширить до динамического array-of-slots без malloc на основе [Jigomas/List](https://github.com/Jigomas/List).
 
@@ -278,13 +283,10 @@ cache: 90224 hits / 3882 misses | 95.9% hit rate
 ### Симулятор
 
 - [ ] CLINT — mtime/mtimecmp по MMIO; нужен для таймерного прерывания
-- [ ] уровни привилегий в CPU — текущий режим M/S/U; Illegal Instruction при CSR-доступе из U-режима
-- [ ] ecall через fireTrap — убрать C++ колбек, пустить ecall → fireTrap → mtvec → trap_handler
 - [ ] ELF-загрузчик
 
 ### ОС
 
-- [ ] U-mode + CAUSE_ECALL_U handler — системные вызовы без паники
 - [ ] полная 32-регистровая рамка в trap.S — нужна для preemption
 - [ ] per-process page tables — изоляция процессов; требует поля satp в process.h
 - [ ] kfree() + свободный список страниц
