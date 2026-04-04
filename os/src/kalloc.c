@@ -4,7 +4,7 @@
 
 #define KALLOC_PAGES 4u
 
-static uint8_t heap[KALLOC_PAGES * PAGE_SIZE] __attribute__((aligned(PAGE_SIZE)));
+static uint8_t  heap[KALLOC_PAGES * PAGE_SIZE] __attribute__((aligned(PAGE_SIZE)));
 static uint8_t* bump = heap;
 
 void* kalloc(void) {

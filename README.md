@@ -45,11 +45,14 @@
 статистику попаданий и промахов в реальном времени.
 
 **Ядро ОС** (`os/`) — bare-metal программа на C11 и ассемблере, компилируется без libc.
-Загрузчик (`boot.S`) инициализирует стек, устанавливает mtvec и через `mret` переходит
-в S-mode перед вызовом `kernel_main`. Вывод реализован через UART-драйвер (`uart.c`):
+Загрузчик (`boot.S`) инициализирует стек, устанавливает mtvec и через `mret` остаётся
+в M-mode перед вызовом `kernel_main`. Вывод реализован через UART-драйвер (`uart.c`):
 запись по MMIO-адресу `0xF000` перехватывается симулятором и выводится в stdout.
 Системные вызовы (`ecall`) обрабатываются ОС: `trap.S` сохраняет кадр регистров и передаёт
 указатель на него в `trap_handler`; `trap.c` читает `a7` из кадра и диспетчеризует вызов.
+Таймерные прерывания реализованы через CLINT-драйвер (`clint.c`): инициализация записывает
+`mtimecmp` по MMIO `0xF00C`, симулятор на каждом шаге проверяет `mtime >= mtimecmp` и кидает
+`INT_TIMER_M`; обработчик в `kernel_main` сбрасывает таймер через `clint_set_next()`.
 
 ```plaintext
 ┌──────────────────────────────────────────────────────┐
@@ -87,7 +90,9 @@
 │                        │  miss                       │
 │  ┌─────────────────────▼────────────────────────┐    │
 │  │   MemoryModel<32>   64 KiB                   │    │
-│  │   MMIO: 0xF000  (UART TX → stdout)           │    │
+│  │   MMIO: 0xF000 (UART TX → stdout)            │    │
+│  │   MMIO: 0xF004 (mtime lo/hi)                │    │
+│  │   MMIO: 0xF00C (mtimecmp lo/hi)             │    │
 │  └──────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────┘
 ```
@@ -172,7 +177,7 @@ Hello from XorOS!
 hi
 kernel: all done
 
-cache: 8445 hits / 2011 misses | 80.8% hit rate
+cache: 9901 hits / 2606 misses | 79.2% hit rate
 ```
 
 ### Запуск тестов OS
@@ -258,7 +263,7 @@ cache: 357940 hits / 169674 misses | 67.8% hit rate
 
 | Компонент        | Описание                                                                    |
 |------------------|-----------------------------------------------------------------------------|
-| `boot.S`         | Инициализация SP, GP, mtvec, mret (M->S mode), вызов `kernel_main`          |
+| `boot.S`         | Инициализация SP, GP, mtvec, mret (MPP=M), вызов `kernel_main`              |
 | `ecall.h`        | `sys_putchar` / `sys_exit` через inline asm; обрабатываются OS trap_handler |
 | `csr.h`          | Адреса Machine-level CSR, коды mcause (включая CAUSE_ECALL_U/S/M)           |
 | `trap.S`         | trap_entry: сохранение caller-saved + SP (*frame), mepc+=4 для ecall, mret  |
@@ -271,7 +276,8 @@ cache: 357940 hits / 169674 misses | 67.8% hit rate
 | `vmem.h/c`       | Sv32 виртуальная память: identity map, satp, sfence.vma (NOP)               |
 | `pipe.h/c`       | Кольцевой буфер (16 байт); non-blocking pipe_write/read                     |
 | `uart.h/c`       | MMIO UART: uart_putchar/puts → запись в 0xF000                              |
-| `kernel_main`    | Демо pipe + UART: task_a пишет в pipe, task_b читает через UART             |
+| `clint.h/c`      | Таймер: clint_init(interval) вооружает mtimecmp; clint_set_next() сбрасывает|
+| `kernel_main`    | Демо pipe + UART: task_a пишет в pipe, task_b читает через UART; CLINT init |
 | Тесты            | 27 тестов: putchar, арифметика, Sv32 vmem, canary, pipe, kalloc, spinlock   |
 
 > Список процессов в планировщике планируется расширить до динамического array-of-slots без malloc на основе [Jigomas/List](https://github.com/Jigomas/List).

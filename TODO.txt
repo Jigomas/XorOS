@@ -1,20 +1,21 @@
-Процессор:
-// TODO: CLINT — mtime/mtimecmp по MMIO; нужен для таймерного прерывания в ОС
+// --- Процессор ---
+
 // TODO: ELF-загрузчик
 // TODO: расширения F / D / C (A уже сделано)
 
-ОС:
-// TODO: полная 32-регистровая рамка в trap.S — нужна для preemption (сейчас только caller-saved, по ABI верно, но недостаточно)
-// TODO: per-process page tables — изоляция процессов; process.h нужно поле satp; требует kalloc + U-mode + правки trap.S
-// TODO: per-process PT
-// TODO: kfree() + свободный список страниц — kalloc сейчас bump без освобождения
-// TODO: sbrk(n) syscall — расширение адресного пространства процесса через kalloc + vmem_map
-// TODO: блокирующий pipe + BLOCKED-состояние — сейчас дропает при переполнении; нужна очередь ожидающих + wake-up
-// TODO: таймерное прерывание → вытесняющий планировщик (требует CLINT + полную рамку в trap.S)
-// TODO: демо дедлока — два процесса берут два spinlock-а в разном порядке; добавить watchdog-таймер или детектор
-// TODO: fork + wait — создание дочернего процесса и ожидание завершения
-// TODO: COW-форк — copy-on-write страницы; требует A-ext (sc.w для fault handler), ref-count в kalloc
-// TODO: заменить статический массив процессов в планировщике на array-of-slots список (Jigomas/List)
-// TODO: CoreMark (printf stub + static malloc + instrCount)
-// TODO: изучить выравнивание структур в C (__attribute__((aligned)), #pragma pack)
-// TODO: exec — загрузка flat binary из памяти; требует ФС или RAM-диск + ELF-загрузчик
+// --- ОС ---
+
+// TODO: вытесняющий планировщик    — полная 32-регистровая рамка в trap.S + sched_yield() из timer_handler (OSTEP гл. 6.3)
+// TODO: kfree()                    — свободный список страниц; kalloc сейчас bump без освобождения
+// TODO: per-process page tables    — изоляция процессов; поле satp в process.h; требует kfree
+// TODO: PROC_BLOCKED + wake-up     — pipe дропает при переполнении; BLOCKED + будить при освобождении (OSTEP гл. 4.4)
+// TODO: U-mode процессы            — запускать задачи через mret в PrivMode::U; инфраструктура уже есть (OSTEP гл. 6.2)
+// TODO: fork + wait                — создание дочернего процесса и ожидание завершения (OSTEP гл. 5)
+// TODO: exec()                     — загрузка flat binary из памяти в адресное пространство процесса (OSTEP гл. 5.3)
+// TODO: sbrk(n)                    — расширение адресного пространства процесса через kalloc + vmem_map
+// TODO: COW-форк                   — copy-on-write страницы; ref-count в kalloc, sc.w для fault handler
+// TODO: заменить массив процессов  — array-of-slots список без malloc (Jigomas/List)
+// TODO: MLFQ                       — приоритеты в PCB, понижение при использовании кванта, boost раз в период (OSTEP гл. 8)
+// TODO: лотерейный планировщик     — tickets в PCB, LCG-генератор, выбор победителя в sched_yield (OSTEP гл. 9)
+// TODO: демо дедлока               — два процесса берут два spinlock-а в разном порядке; watchdog или детектор
+// TODO: CoreMark                   — printf stub + static malloc + instrCount

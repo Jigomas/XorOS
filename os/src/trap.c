@@ -8,11 +8,13 @@ static trap_fn_t exc_table[MAX_CAUSES];  // exception handlers (mcause[31]=0)
 static trap_fn_t int_table[MAX_CAUSES];  // interrupt handlers (mcause[31]=1)
 
 // uart tx - direct MMIO write, no ecall dependency
-#define UART_TX ((volatile uint32_t *)0xF000u)
+#define UART_TX ((volatile uint32_t*) 0xF000u)
 
-static void putchar_trap(char c) { *UART_TX = (uint32_t)(unsigned char)c; }
+static void putchar_trap(char c) {
+    *UART_TX = (uint32_t) (unsigned char) c;
+}
 
-static void puts_trap(const char *s) {
+static void puts_trap(const char* s) {
     while (*s)
         putchar_trap(*s++);
 }
@@ -20,8 +22,8 @@ static void puts_trap(const char *s) {
 static void puthex_trap(uint32_t v) {
     puts_trap("0x");
     for (int i = 7; i >= 0; --i) {
-        uint8_t n = (uint8_t)((v >> (i * 4)) & 0xF);
-        putchar_trap(n < 10 ? (char)('0' + n) : (char)('a' + n - 10));
+        uint8_t n = (uint8_t) ((v >> (i * 4)) & 0xF);
+        putchar_trap(n < 10 ? (char) ('0' + n) : (char) ('a' + n - 10));
     }
 }
 
@@ -30,7 +32,7 @@ static __attribute__((noreturn)) void do_halt(void) {
     __builtin_unreachable();
 }
 
-static const char *cause_name(uint32_t mcause) {
+static const char* cause_name(uint32_t mcause) {
     if (mcause & MCAUSE_INT) {
         switch (mcause & ~MCAUSE_INT) {
             case 3:
@@ -43,7 +45,7 @@ static const char *cause_name(uint32_t mcause) {
                 return "unknown interrupt";
         }
     }
-    switch ((csr_exc_t)mcause) {
+    switch ((csr_exc_t) mcause) {
         case CAUSE_INSN_MISALIGN:
             return "instruction address misaligned";
         case CAUSE_INSN_FAULT:
@@ -77,8 +79,8 @@ static const char *cause_name(uint32_t mcause) {
     }
 }
 
-static void panic_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32_t *frame) {
-    (void)frame;
+static void panic_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32_t* frame) {
+    (void) frame;
     puts_trap("[trap] ");
     puts_trap(cause_name(mcause));
     puts_trap(" at ");
@@ -93,13 +95,13 @@ static void panic_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32
 }
 
 // ecall dispatcher - handles all privilege levels (U/S/M)
-static void ecall_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32_t *frame) {
-    (void)mcause;
-    (void)mepc;
-    (void)mtval;
+static void ecall_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32_t* frame) {
+    (void) mcause;
+    (void) mepc;
+    (void) mtval;
     switch (frame[TRAP_FRAME_A7]) {
         case 1:
-            putchar_trap((char)frame[TRAP_FRAME_A0]);
+            putchar_trap((char) frame[TRAP_FRAME_A0]);
             return;
         case 10:
             do_halt();
@@ -117,7 +119,7 @@ void trap_register_int(uint32_t cause, trap_fn_t fn) {
         int_table[cause] = fn;
 }
 
-void trap_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32_t *frame) {
+void trap_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32_t* frame) {
     // ecall: handle directly for all privilege levels
     uint32_t code = mcause & ~MCAUSE_INT;
     if (!(mcause & MCAUSE_INT) &&
@@ -126,7 +128,8 @@ void trap_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32_t *fram
         return;
     }
 
-    trap_fn_t fn = (code < MAX_CAUSES) ? ((mcause & MCAUSE_INT) ? int_table[code] : exc_table[code]) : 0;
+    trap_fn_t fn =
+        (code < MAX_CAUSES) ? ((mcause & MCAUSE_INT) ? int_table[code] : exc_table[code]) : 0;
     if (fn)
         fn(mcause, mepc, mtval, frame);
     else

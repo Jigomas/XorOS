@@ -18,11 +18,11 @@ typedef enum {
 } csr_addr_t;
 
 // mstatus bits
-#define MSTATUS_MIE  (1u << 3)   // global machine interrupt enable
-#define MSTATUS_MPIE (1u << 7)   // saved MIE before trap
-#define MSTATUS_MPP  (3u << 11)  // previous privilege mode (2 bits)
-#define MSTATUS_MPP_S (1u << 11) // MPP = S-mode (01)
-#define MSTATUS_MPP_M (3u << 11) // MPP = M-mode (11)
+#define MSTATUS_MIE   (1u << 3)   // global machine interrupt enable
+#define MSTATUS_MPIE  (1u << 7)   // saved MIE before trap
+#define MSTATUS_MPP   (3u << 11)  // previous privilege mode (2 bits)
+#define MSTATUS_MPP_S (1u << 11)  // MPP = S-mode (01)
+#define MSTATUS_MPP_M (3u << 11)  // MPP = M-mode (11)
 
 // mcause: bit 31 = 1 - interrupt, 0 - exception
 #define MCAUSE_INT (1u << 31)

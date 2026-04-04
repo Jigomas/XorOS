@@ -19,7 +19,7 @@ add_compile_options(
     -Wall -Wextra -Werror
 )
 
-add_executable(xoros src/boot.S src/kernel_main.c src/trap.S src/trap.c src/sched_switch.S src/scheduler.c src/vmem.c src/pipe.c src/uart.c src/kalloc.c)
+add_executable(xoros src/boot.S src/kernel_main.c src/trap.S src/trap.c src/sched_switch.S src/scheduler.c src/vmem.c src/pipe.c src/uart.c src/kalloc.c src/clint.c)
 target_include_directories(xoros PUBLIC include)
 target_link_options(xoros PRIVATE
     ${ARCH_FLAGS}
