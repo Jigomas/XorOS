@@ -1,8 +1,6 @@
 # XorOS
 
-<p align="left">
-  <img src="logo.png" width="200" alt="XorOS Logo">
-</p>
+![logo](logo.png)
 
 Минимальная bare-metal операционная система, написанная с нуля поверх самописного симулятора RISC-V.
 
@@ -10,7 +8,6 @@
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-blue)
 ![RISC-V](https://img.shields.io/badge/arch-RISC--V%20RV32IA-green)
 ![CMake](https://img.shields.io/badge/build-CMake-informational)
-
 
 ---
 
@@ -91,8 +88,8 @@
 │  ┌─────────────────────▼────────────────────────┐    │
 │  │   MemoryModel<32>   64 KiB                   │    │
 │  │   MMIO: 0xF000 (UART TX → stdout)            │    │
-│  │   MMIO: 0xF004 (mtime lo/hi)                │    │
-│  │   MMIO: 0xF00C (mtimecmp lo/hi)             │    │
+│  │   MMIO: 0xF004 (mtime lo/hi)                 │    │
+│  │   MMIO: 0xF00C (mtimecmp lo/hi)              │    │
 │  └──────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────┘
 ```
@@ -257,7 +254,8 @@ cache: 357940 hits / 169674 misses | 67.8% hit rate
 | Память        | Плоская, little-endian; LR/SC reservation; MMIO regions               |
 | CacheModel    | LRU-кэш (64 слова) поверх MemoryModel; write-through; hit/miss        |
 | Дизассемблер  | `Disasm::disassemble()` — DecodedInstr в строку мнемоники             |
-| Отладка       | Трассировка инструкций (`setDebug`), hex-дамп памяти                  |
+| Хуки отладки  | `setStepHook` / `setTrapHook` — колбеки на каждую инструкцию и трап   |
+| Dumper        | Дамп регистров, CSR, CLINT, hex-дамп памяти; запись трейса в `.txt`   |
 
 ### ОС (`os/`)
 
@@ -288,16 +286,18 @@ cache: 357940 hits / 169674 misses | 67.8% hit rate
 
 ### Симулятор
 
-- [ ] CLINT — mtime/mtimecmp по MMIO; нужен для таймерного прерывания
 - [ ] ELF-загрузчик
 
 ### ОС
 
 - [ ] полная 32-регистровая рамка в trap.S — нужна для preemption
-- [ ] per-process page tables — изоляция процессов; требует поля satp в process.h
+- [ ] вытесняющий планировщик — sched_yield() из timer_handler
 - [ ] kfree() + свободный список страниц
-- [ ] таймерное прерывание → вытесняющий планировщик (требует CLINT)
+- [ ] per-process page tables — изоляция процессов; требует kfree
+- [ ] блокирующий pipe + BLOCKED-состояние
 - [ ] fork + wait
+- [ ] exec
+- [ ] sbrk(n) syscall
 - [ ] COW-форк — ref-count в kalloc, sc.w для fault handler
 - [ ] Динамический список процессов — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
 - [ ] CoreMark — bare-metal бенчмарк производительности

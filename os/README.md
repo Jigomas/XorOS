@@ -12,14 +12,18 @@
 
 Ядро написано на C11 и ассемблере, компилируется без libc в плоский бинарник.
 Симулятор загружает его по адресу `0x0` и начинает исполнение с PC=0.
-Загрузчик (`boot.S`) инициализирует стек, устанавливает mtvec, переходит в S-mode через `mret`
-и передаёт управление `kernel_main`. Покрыта тестами.
+Загрузчик (`boot.S`) инициализирует стек, устанавливает mtvec, через `mret` остаётся
+в M-mode и передаёт управление `kernel_main`. Покрыта тестами.
 
 ```plaintext
 Адресное пространство (64 KiB):
 
   0xFFFF  ┤ конец памяти
-  0xF000  ├─ UART TX  (MMIO · write → stdout)
+  0xF010  ├─ CLINT mtimecmp hi (MMIO)
+  0xF00C  ├─ CLINT mtimecmp lo (MMIO)
+  0xF008  ├─ CLINT mtime hi    (MMIO)
+  0xF004  ├─ CLINT mtime lo    (MMIO)
+  0xF000  ├─ UART TX           (MMIO · write → stdout)
           │
   0xA000  ┤ ...свободно...
           │
@@ -73,10 +77,11 @@ os/
 │   ├── scheduler.h   — API планировщика: sched_init/spawn/yield/exit
 │   ├── pipe.h        — pipe_t: кольцевой буфер; pipe_init/write/read
 │   ├── uart.h        — MMIO UART: uart_putchar/puts → 0xF000
+│   ├── clint.h       — CLINT MMIO 0xF004-0xF010; clint_init(interval), clint_set_next()
 │   └── vmem.h        — Sv32 виртуальная память: vmem_map/vmem_enable, флаги PTE
 ├── src/
-│   ├── boot.S          — _start: SP, GP, mtvec, mret (M→S), вызов kernel_main
-│   ├── kernel_main.c   — демо: task_a пишет в pipe, task_b читает и печатает
+│   ├── boot.S          — _start: SP, GP, mtvec, mret (MPP=M), вызов kernel_main
+│   ├── kernel_main.c   — демо: task_a пишет в pipe, task_b читает и печатает; clint_init(1000)
 │   ├── trap.S          — trap_entry: сохранение caller-saved + SP как *frame, mret;
 │   │                     mepc += 4 для ecall-причин перед восстановлением регистров
 │   ├── trap.c          — ecall_handler (a7=1 → uart, a7=10 → halt); диспетчер mcause;
@@ -86,6 +91,7 @@ os/
 │   ├── scheduler.c     — round-robin планировщик, трамплин, проверка канарейки
 │   ├── pipe.c          — реализация кольцевого буфера (non-blocking)
 │   ├── uart.c          — uart_putchar/puts через MMIO (0xF000)
+│   ├── clint.c         — clint_init: устанавливает mtimecmp, включает MTIE (csrrs mie)
 │   └── vmem.c          — Sv32 page tables: root_pt/l0_pt, vmem_map, vmem_enable
 ├── tests/
 │   └── test_ecall.c  — 27 тестов: sys_putchar, арифметика, Sv32 vmem, stack canary, pipe, kalloc, spinlock
@@ -142,7 +148,7 @@ Hello from XorOS!
 hi
 kernel: all done
 
-cache: 8445 hits / 2011 misses | 80.8% hit rate
+cache: 9901 hits / 2606 misses | 79.2% hit rate
 ```
 
 Ожидаемый вывод тестов:
@@ -230,18 +236,17 @@ cache: 357940 hits / 169674 misses | 67.8% hit rate
 
 ### Симулятор
 
-- [ ] CLINT — mtime/mtimecmp по MMIO; нужен для таймерного прерывания
 - [ ] ELF-загрузчик
 
 ### ОС
 
 - [ ] полная 32-регистровая рамка в trap.S — нужна для preemption
-- [ ] per-process page tables — изоляция процессов; требует поля satp в process.h
+- [ ] вытесняющий планировщик — sched_yield() из timer_handler
 - [ ] kfree() + свободный список страниц — kalloc сейчас bump без освобождения
+- [ ] per-process page tables — изоляция процессов; требует kfree
 - [ ] блокирующий pipe + BLOCKED-состояние — сейчас дропает при переполнении
-- [ ] таймерное прерывание → вытесняющий планировщик (требует CLINT)
 - [ ] fork + wait
-- [ ] COW-форк — ref-count в kalloc, sc.w для fault handler
-- [ ] sbrk(n) syscall
-- [ ] CoreMark
 - [ ] exec
+- [ ] sbrk(n) syscall
+- [ ] COW-форк — ref-count в kalloc, sc.w для fault handler
+- [ ] CoreMark
