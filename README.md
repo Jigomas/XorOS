@@ -124,6 +124,7 @@ RISC-V: симулятор не знает про OS, OS не знает про 
 XorOS/
 ├── rv32i/                  — симулятор RISC-V (C++17): RV32I + M + A расширения
 ├── os/                     — bare-metal ядро для симулятора (C11 + asm, riscv64-unknown-elf-gcc)
+├── scripts/                — вспомогательные скрипты (слияние compile_commands)
 ├── CMakeLists.txt          — корневой CMake: сборка rv32i + os как подпроекты
 ├── compile_commands.json   — слитый compile_commands (rv32i + os) для clangd
 └── TODO.txt                — список задач
@@ -264,12 +265,12 @@ cache: 357940 hits / 169674 misses | 67.8% hit rate
 | `boot.S`         | Инициализация SP, GP, mtvec, mret (MPP=M), вызов `kernel_main`              |
 | `ecall.h`        | `sys_putchar` / `sys_exit` через inline asm; обрабатываются OS trap_handler |
 | `csr.h`          | Адреса Machine-level CSR, коды mcause (включая CAUSE_ECALL_U/S/M)           |
-| `trap.S`         | trap_entry: сохранение caller-saved + SP (*frame), mepc+=4 для ecall, mret  |
+| `trap.S`         | trap_entry: сохранение всех 32 регистров (*frame, sp через mscratch), mret  |
 | `trap.c`         | ecall_handler (a7→uart/halt); диспетчеризация mcause; паника; do_halt       |
 | `kalloc.h/c`     | Bump allocator: статический heap[4×4KiB], PAGE_SIZE=4096                    |
 | `spinlock.h`     | Header-only spinlock через `amoswap.w.aq` / `amoswap.w.rl` (A-ext)          |
 | `process.h`      | PCB: `proc_state_t`, `context_t` (callee-saved), `proc_t`                   |
-| `scheduler.h/c`  | Планировщик round-robin: `sched_init/spawn/yield/exit`                      |
+| `scheduler.h/c`  | Вытесняющий планировщик round-robin: `sched_init/spawn/yield/exit`          |
 | `sched_switch.S` | `context_switch` — сохранение/восстановление ra/sp/s0-s11                   |
 | `vmem.h/c`       | Sv32 виртуальная память: identity map, satp, sfence.vma (NOP)               |
 | `pipe.h/c`       | Кольцевой буфер (16 байт); non-blocking pipe_write/read                     |
@@ -286,20 +287,28 @@ cache: 357940 hits / 169674 misses | 67.8% hit rate
 
 ### Симулятор
 
+- [ ] TLB — кэш VPN→PPN в RVModel; SFENCE.VMA перестаёт быть NOP; добавлять вместе с per-process page tables
 - [ ] ELF-загрузчик
+- [ ] расширения F / D / C
+- [ ] WFI — idle ядро вместо busy-loop; нужна поддержка инструкции в симуляторе
 
 ### ОС
 
-- [ ] полная 32-регистровая рамка в trap.S — нужна для preemption
-- [ ] вытесняющий планировщик — sched_yield() из timer_handler
+- [ ] idle task — pid=0 с wfi; sched_yield без PROC_READY молча возвращается
 - [ ] kfree() + свободный список страниц
 - [ ] per-process page tables — изоляция процессов; требует kfree
+- [ ] U-mode процессы — запускать задачи через mret в PrivMode::U; инфраструктура уже есть
+- [ ] расширить таблицу ecall — sys_yield, sys_getpid для U-mode задач
 - [ ] блокирующий pipe + BLOCKED-состояние
+- [ ] pipe + spinlock — pipe_write/read не thread-safe при вытесняющем планировщике
 - [ ] fork + wait
 - [ ] exec
 - [ ] sbrk(n) syscall
 - [ ] COW-форк — ref-count в kalloc, sc.w для fault handler
-- [ ] Динамический список процессов — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
+- [ ] динамический список процессов — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
+- [ ] MLFQ — приоритеты в PCB, понижение при использовании кванта, boost раз в период
+- [ ] лотерейный планировщик — tickets в PCB, LCG-генератор
+- [ ] демо дедлока — два процесса берут два spinlock в разном порядке; watchdog или детектор
 - [ ] CoreMark — bare-metal бенчмарк производительности
 
 ---

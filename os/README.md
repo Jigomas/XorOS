@@ -81,8 +81,8 @@ os/
 │   └── vmem.h        — Sv32 виртуальная память: vmem_map/vmem_enable, флаги PTE
 ├── src/
 │   ├── boot.S          — _start: SP, GP, mtvec, mret (MPP=M), вызов kernel_main
-│   ├── kernel_main.c   — демо: task_a пишет в pipe, task_b читает и печатает; clint_init(1000)
-│   ├── trap.S          — trap_entry: сохранение caller-saved + SP как *frame, mret;
+│   ├── kernel_main.c   — демо: task_a пишет в pipe, task_b читает и печатает; clint_init(1000); timer_handler вызывает sched_yield
+│   ├── trap.S          — trap_entry: сохранение всех 32 регистров в *frame (sp через mscratch);
 │   │                     mepc += 4 для ecall-причин перед восстановлением регистров
 │   ├── trap.c          — ecall_handler (a7=1 → uart, a7=10 → halt); диспетчер mcause;
 │   │                     паника через inline MMIO; do_halt через .word 0x0
@@ -234,19 +234,19 @@ cache: 357940 hits / 169674 misses | 67.8% hit rate
 
 ## Дорожная карта
 
-### Симулятор
-
-- [ ] ELF-загрузчик
-
-### ОС
-
-- [ ] полная 32-регистровая рамка в trap.S — нужна для preemption
-- [ ] вытесняющий планировщик — sched_yield() из timer_handler
+- [ ] idle task — pid=0 с wfi; sched_yield без PROC_READY молча возвращается
 - [ ] kfree() + свободный список страниц — kalloc сейчас bump без освобождения
 - [ ] per-process page tables — изоляция процессов; требует kfree
+- [ ] U-mode процессы — запускать задачи через mret в PrivMode::U; инфраструктура уже есть
+- [ ] расширить таблицу ecall — sys_yield, sys_getpid для U-mode задач
 - [ ] блокирующий pipe + BLOCKED-состояние — сейчас дропает при переполнении
+- [ ] pipe + spinlock — pipe_write/read не thread-safe при вытесняющем планировщике
 - [ ] fork + wait
 - [ ] exec
 - [ ] sbrk(n) syscall
 - [ ] COW-форк — ref-count в kalloc, sc.w для fault handler
+- [ ] динамический список процессов — array-of-slots без malloc (на основе [Jigomas/List](https://github.com/Jigomas/List))
+- [ ] MLFQ — приоритеты в PCB, понижение при использовании кванта, boost раз в период
+- [ ] лотерейный планировщик — tickets в PCB, LCG-генератор
+- [ ] демо дедлока — два процесса берут два spinlock в разном порядке; watchdog или детектор
 - [ ] CoreMark

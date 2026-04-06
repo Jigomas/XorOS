@@ -28,7 +28,7 @@ static void timer_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32
     (void) mtval;
     (void) frame;
     clint_set_next();
-    // TODO: scheduler tick for preemption
+    sched_yield();
 }
 
 void kernel_main(void) {

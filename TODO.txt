@@ -1,15 +1,19 @@
 // --- Процессор ---
 
+// TODO: TLB                        — кэш VPN→PPN в RVModel; SFENCE.VMA перестаёт быть NOP; добавлять вместе с per-process page tables
 // TODO: ELF-загрузчик
 // TODO: расширения F / D / C (A уже сделано)
+// TODO: WFI                        — инструкция wait-for-interrupt; ядро переходит в idle вместо busy-loop sched_yield
 
 // --- ОС ---
 
-// TODO: вытесняющий планировщик    — полная 32-регистровая рамка в trap.S + sched_yield() из timer_handler (OSTEP гл. 6.3)
+// TODO: idle task                  — pid=0 с wfi; sched_yield без PROC_READY молча возвращается, ядро зависает
 // TODO: kfree()                    — свободный список страниц; kalloc сейчас bump без освобождения
 // TODO: per-process page tables    — изоляция процессов; поле satp в process.h; требует kfree
 // TODO: PROC_BLOCKED + wake-up     — pipe дропает при переполнении; BLOCKED + будить при освобождении (OSTEP гл. 4.4)
+// TODO: pipe + spinlock            — pipe_write/read не thread-safe; при preemption гонка на count/pos; обернуть в spinlock
 // TODO: U-mode процессы            — запускать задачи через mret в PrivMode::U; инфраструктура уже есть (OSTEP гл. 6.2)
+// TODO: sys_yield / sys_getpid     — расширить таблицу ecall; нужны для user-space задач
 // TODO: fork + wait                — создание дочернего процесса и ожидание завершения (OSTEP гл. 5)
 // TODO: exec()                     — загрузка flat binary из памяти в адресное пространство процесса (OSTEP гл. 5.3)
 // TODO: sbrk(n)                    — расширение адресного пространства процесса через kalloc + vmem_map
@@ -18,4 +22,5 @@
 // TODO: MLFQ                       — приоритеты в PCB, понижение при использовании кванта, boost раз в период (OSTEP гл. 8)
 // TODO: лотерейный планировщик     — tickets в PCB, LCG-генератор, выбор победителя в sched_yield (OSTEP гл. 9)
 // TODO: демо дедлока               — два процесса берут два spinlock-а в разном порядке; watchdog или детектор
+// TODO: тест timer interrupt        — добавить тест в test_ecall.c: clint_init + проверить что INT_TIMER_M срабатывает
 // TODO: CoreMark                   — printf stub + static malloc + instrCount

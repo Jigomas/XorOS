@@ -3,10 +3,11 @@
 
 #include <stdint.h>
 
-// saved caller-saved frame indices (matches trap.S layout)
-#define TRAP_FRAME_RA 0  // ra  - sp+0
-#define TRAP_FRAME_A0 1  // a0  - sp+4
-#define TRAP_FRAME_A7 8  // a7  - sp+32
+// full 32-register frame indices (matches trap.S layout, word offsets)
+#define TRAP_FRAME_RA 0   // x1  ra   - sp+0
+#define TRAP_FRAME_SP 1   // x2  sp   - sp+4  (original sp before trap)
+#define TRAP_FRAME_A0 9   // x10 a0   - sp+36
+#define TRAP_FRAME_A7 16  // x17 a7   - sp+64
 
 // handler signature: cause, faulting PC, extra info, pointer to saved caller-saved frame
 typedef void (*trap_fn_t)(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32_t* frame);
