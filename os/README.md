@@ -31,7 +31,7 @@
   0x5000  ├─ l0_pt    (Sv32 second-level PT · 4 KiB)
   0x4000  ├─ root_pt  (Sv32 root page table · 4 KiB)
           │
-  0x2000  ├─ SP       (стек растёт вниз ↓)
+  0x3000  ├─ SP       (стек растёт вниз ↓)
           │
   0x0000  ├─ _start   (код · flat binary загружается сюда)
 ```
@@ -148,12 +148,13 @@ Hello from XorOS!
 hi
 kernel: all done
 
-cache: 9901 hits / 2606 misses | 79.2% hit rate
+cache: 11317 hits / 3092 misses | 78.5% hit rate
 ```
 
 Ожидаемый вывод тестов:
 
 ```plaintext
+=== XorOS ===
 === XorOS ecall tests ===
 [PASS] sys_putchar does not crash
 [PASS] arithmetic: 1+1==2
@@ -196,7 +197,7 @@ cache: 9901 hits / 2606 misses | 79.2% hit rate
 passed: 27
 failed: 0
 
-cache: 357940 hits / 169674 misses | 67.8% hit rate
+cache: 464379 hits / 220613 misses | 67.8% hit rate
 ```
 
 ---

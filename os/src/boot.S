@@ -3,7 +3,7 @@
 .global _start
 
 _start:
-    li    sp, 0x2000
+    li    sp, 0x3000
     .option push
     .option norelax
     la    gp, __global_pointer$

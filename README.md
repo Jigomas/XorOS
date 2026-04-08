@@ -102,7 +102,7 @@
 
 **Flat binary вместо ELF.** ОС компонуется с флагами `-Ttext=0x0 -e _start` в сырой
 бинарник без заголовков. Симулятор копирует его в начало виртуальной памяти напрямую —
-никакого ELF-загрузчика. Стек располагается по адресу `0x2000` и растёт вниз в пределах 64 KiB.
+никакого ELF-загрузчика. Стек располагается по адресу `0x3000` и растёт вниз в пределах 64 KiB.
 
 **ECALL через fireTrap.** При встрече инструкции `ecall` симулятор не вызывает никакой C++
 функции — он определяет причину (EXC_ECALL_U, EXC_ECALL_S или EXC_ECALL_M по текущему
@@ -175,7 +175,7 @@ Hello from XorOS!
 hi
 kernel: all done
 
-cache: 9901 hits / 2606 misses | 79.2% hit rate
+cache: 11317 hits / 3092 misses | 78.5% hit rate
 ```
 
 ### Запуск тестов OS
@@ -185,6 +185,7 @@ cmake --build os/build --target run_tests
 ```
 
 ```plaintext
+=== XorOS ===
 === XorOS ecall tests ===
 [PASS] sys_putchar does not crash
 [PASS] arithmetic: 1+1==2
@@ -227,7 +228,7 @@ cmake --build os/build --target run_tests
 passed: 27
 failed: 0
 
-cache: 357940 hits / 169674 misses | 67.8% hit rate
+cache: 464379 hits / 220613 misses | 67.8% hit rate
 ```
 
 ### Запуск тестов симулятора
