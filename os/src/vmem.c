@@ -22,6 +22,6 @@ void vmem_map(uint32_t virt, uint32_t phys, uint32_t flags) {
 void vmem_enable(void) {
     uint32_t ppn  = (uint32_t) root_pt >> 12u;
     uint32_t satp = (1u << 31u) | ppn;
-    __asm__ volatile("csrw satp, %0" ::"r"(satp));
-    __asm__ volatile(".word 0x12000073" ::: "memory");  // sfence.vma zero, zero
+    __asm__ volatile("csrw satp, %0" ::"r"(satp)); // set satp to enable paging, mode=Sv32, ppn=root_pt
+    __asm__ volatile(".word 0x12000073" ::: "memory");  // sfence.vma zero, zero (flush TLB)
 }

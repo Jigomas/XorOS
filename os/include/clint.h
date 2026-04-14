@@ -10,6 +10,7 @@
 #define CLINT_MTIMECMP_LO ((volatile uint32_t*) 0xF00Cu)
 #define CLINT_MTIMECMP_HI ((volatile uint32_t*) 0xF010u)
 
+// atomic 64-bit read/write of mtime and mtimecmp is not guaranteed, so we use the following helper functions
 // read current mtime safely (double-read hi to avoid 32-bit rollover race)
 static inline uint64_t clint_mtime(void) {
     uint32_t hi, lo;

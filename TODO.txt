@@ -11,6 +11,7 @@
 // TODO: kfree()                    — свободный список страниц; kalloc сейчас bump без освобождения
 // TODO: per-process page tables    — изоляция процессов; поле satp в process.h; требует kfree
 // TODO: PROC_BLOCKED + wake-up     — pipe дропает при переполнении; BLOCKED + будить при освобождении (OSTEP гл. 4.4)
+// TODO: обработка зомби-процессов  — PROC_ZOMBIE сейчас навсегда занимает слот; нужен wait/reap чтобы освобождать слот (OSTEP гл. 5)
 // TODO: pipe + spinlock            — pipe_write/read не thread-safe; при preemption гонка на count/pos; обернуть в spinlock
 // TODO: U-mode процессы            — запускать задачи через mret в PrivMode::U; инфраструктура уже есть (OSTEP гл. 6.2)
 // TODO: sys_yield / sys_getpid     — расширить таблицу ecall; нужны для user-space задач
