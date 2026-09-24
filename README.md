@@ -89,7 +89,7 @@
 │  │   MemoryModel<32>   64 KiB                   │    │
 │  │   MMIO: 0xF000 (UART TX → stdout)            │    │
 │  │   MMIO: 0xF004–0xF008 (mtime lo/hi)          │    │
-│  │   MMIO: 0xF00C–0xF010 (mtimecmp lo/hi)      │    │
+│  │   MMIO: 0xF00C–0xF010 (mtimecmp lo/hi)       │    │
 │  └──────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────┘
 ```
